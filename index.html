@@ -504,7 +504,22 @@
       min-width: 170px;
     }
     .bar-open-btn.active {
+      background: linear-gradient(135deg, #ff1744, #b00020);
       box-shadow: 0 0 0 3px rgba(0, 200, 83, 0.28), 0 6px 14px rgba(0,0,0,0.28);
+    }
+    .firebase-status {
+      width: 100%;
+      margin-top: 4px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #a8d8ff;
+      opacity: 0.95;
+    }
+    .firebase-status.error {
+      color: #ffb3b3;
+    }
+    .firebase-status.ok {
+      color: #b7ffcf;
     }
 
     .reset-all-btn {
@@ -894,6 +909,7 @@
           <button id="btn-report" class="btn report-btn">REPORT</button>
           <div id="bar-open-status" class="mini-status">Status: CLOSED</div>
           <div id="counting-status" class="mini-status">Counting: OFF</div>
+          <div id="firebase-status" class="firebase-status">Firebase: connecting...</div>
         </div>
 
         <div class="recipe-shortcuts-wrap">
@@ -990,6 +1006,7 @@
     var db = firebase.database();
 
     const APP_ID = 'bartender-app-v5';
+    const BUILD_VERSION = 'v9-debug';
     const APP_ROOT = 'apps/' + APP_ID;
     const appPath = (path='') => path ? (APP_ROOT + '/' + path) : APP_ROOT;
 
@@ -1059,7 +1076,7 @@
         abbr: 'PM',
         color: 'linear-gradient(135deg,#ec407a,#c2185b)',
         glass: ['Martini glass'],
-        userIngredients: ['Vanilla vodka', 'Passion fruit liqueur', 'Passion fruit purée'],
+        userIngredients: ['Vanilla vodka', 'Passion fruit liqueur', 'Passion fruit purée', 'Vanilla sugar'],
         usage: [
           { name: 'Vanilla vodka', oz: 1.5 },
           { name: 'Passion fruit liqueur', oz: 0.75 },
@@ -1226,6 +1243,7 @@
       btnActivate: document.getElementById('btn-activate'),
       countingStatus: document.getElementById('counting-status'),
       barOpenStatus: document.getElementById('bar-open-status'),
+      firebaseStatus: document.getElementById('firebase-status'),
       reportMeta: document.getElementById('report-meta'),
       reportCocktails: document.getElementById('report-cocktails'),
       reportIngredients: document.getElementById('report-ingredients'),
@@ -1267,6 +1285,19 @@
 
     function clearList(el) {
       el.innerHTML = '';
+    }
+
+    function setFirebaseStatus(text, isError) {
+      if (!els.firebaseStatus) return;
+      els.firebaseStatus.textContent = text;
+      els.firebaseStatus.className = 'firebase-status ' + (isError ? 'error' : 'ok');
+    }
+
+    function showFirebaseError(action, err) {
+      const msg = action + ' failed: ' + (err && err.message ? err.message : err);
+      setFirebaseStatus('Firebase: ' + msg, true);
+      alert(msg);
+      console.error(msg, err);
     }
 
     function fillList(el, items) {
@@ -1326,6 +1357,7 @@
       els.barOpenStatus.textContent = 'Status: ' + (barOpen ? 'OPEN' : 'CLOSED');
       els.countingStatus.textContent = 'Counting: ' + (reportActive ? 'ACTIVE' : 'OFF');
       els.btnBarOpen.classList.toggle('active', barOpen);
+      els.btnBarOpen.textContent = barOpen ? 'BAR CLOSED' : 'BAR OPEN';
       els.btnActivate.classList.toggle('active', reportActive);
       els.btnActivate.textContent = reportActive ? 'ACTIVE' : 'ACTIVATE';
       renderDrinkGrid();
@@ -1474,21 +1506,31 @@
         preparingAt: null
       };
 
-      db.ref(appPath('orders/' + userId)).set(payload);
+      db.ref(appPath('orders/' + userId)).set(payload).catch(err => showFirebaseError('Send order', err));
     }
 
     function cancelMyOrder() {
       if (!myActiveOrder || myActiveOrder.status !== 'ordered') return;
-      db.ref(appPath('orders/' + userId)).remove();
+      db.ref(appPath('orders/' + userId)).remove().catch(err => showFirebaseError('Cancel order', err));
     }
 
     function setBarOpen(nextValue) {
-      db.ref(appPath('state/barOpen')).set(!!nextValue);
+      const cleanValue = !!nextValue;
+      els.btnBarOpen.disabled = true;
+      setFirebaseStatus('Firebase: saving BAR ' + (cleanValue ? 'OPEN' : 'CLOSED') + '...', false);
+      db.ref(appPath('state')).update({
+        barOpen: cleanValue,
+        updatedAt: firebase.database.ServerValue.TIMESTAMP
+      }).then(() => {
+        setFirebaseStatus('Firebase: BAR ' + (cleanValue ? 'OPEN' : 'CLOSED') + ' saved', false);
+      }).catch(err => showFirebaseError('BAR OPEN/CLOSED', err)).finally(() => {
+        els.btnBarOpen.disabled = false;
+      });
     }
 
     function resetAllOrders() {
       if (!confirm('Reset all orders?')) return;
-      db.ref(appPath('orders')).remove();
+      db.ref(appPath('orders')).remove().catch(err => showFirebaseError('Reset orders', err));
     }
 
     function safeKey(name) {
@@ -1502,8 +1544,9 @@
       if (reportActive) {
         if (!confirm('Counting is already active. Reset report totals and start again?')) return;
       }
-      db.ref(appPath('report')).set({ activatedAt: firebase.database.ServerValue.TIMESTAMP });
-      db.ref(appPath('state/reportActive')).set(true);
+      db.ref(appPath('report')).set({ activatedAt: firebase.database.ServerValue.TIMESTAMP })
+        .then(() => db.ref(appPath('state/reportActive')).set(true))
+        .catch(err => showFirebaseError('Activate counting', err));
     }
 
     function recordServed(order) {
@@ -1598,7 +1641,7 @@
 
     function markReady(clientId) {
       const order = ordersMap[clientId];
-      const finish = () => db.ref(appPath('orders/' + clientId)).remove();
+      const finish = () => db.ref(appPath('orders/' + clientId)).remove().catch(err => showFirebaseError('Ready / clear order', err));
 
       if (reportActive && order) {
         recordServed(order).then(finish).catch(err => {
@@ -1613,7 +1656,7 @@
       db.ref(appPath('orders/' + clientId)).update({
         status: 'preparing',
         preparingAt: firebase.database.ServerValue.TIMESTAMP
-      });
+      }).catch(err => showFirebaseError('Start preparation', err));
     }
 
     function getOrdersArray() {
@@ -1789,26 +1832,31 @@
       if (listenersAttached) return;
       listenersAttached = true;
 
+      db.ref('.info/connected').on('value', snap => {
+        if (snap.val() === true) setFirebaseStatus('Firebase: connected — ' + BUILD_VERSION, false);
+        else setFirebaseStatus('Firebase: disconnected / reconnecting — ' + BUILD_VERSION, true);
+      });
+
       db.ref(appPath('state/barOpen')).on('value', snap => {
         barOpen = !!snap.val();
         updateBarStatusBanner();
         updateUserOrderButton();
-      });
+      }, err => showFirebaseError('Read BAR status', err));
 
       db.ref(appPath('state/reportActive')).on('value', snap => {
         reportActive = !!snap.val();
         updateBarStatusBanner();
-      });
+      }, err => showFirebaseError('Read counting status', err));
 
       db.ref(appPath('report')).on('value', snap => {
         reportData = snap.val() || {};
-      });
+      }, err => showFirebaseError('Read report', err));
 
       db.ref(appPath('orders')).on('value', snap => {
         ordersMap = snap.val() || {};
         updateMyOrderFromMap();
         if (sessionRole === 'bartender') renderOrdersTable();
-      });
+      }, err => showFirebaseError('Read orders', err));
     }
 
     document.getElementById('btn-login').addEventListener('click', loginAction);
@@ -1858,6 +1906,7 @@
       } else {
         auth.signInAnonymously().catch(err => {
           els.loginNote.textContent = 'Login failed: ' + err.message;
+          setFirebaseStatus('Firebase auth failed: ' + err.message, true);
         });
       }
     });
