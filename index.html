@@ -145,24 +145,33 @@
 
     .guest-login-btn {
       min-height: 48px;
-      background: linear-gradient(135deg, #ff8a00, #e53935);
-      color: #ffffff;
+      color: #1f2d3a;
       font-size: 18px;
       padding: 10px 8px;
       border-radius: 14px;
-      text-shadow: 0 1px 3px rgba(0,0,0,0.35);
+      text-shadow: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+      border: 1px solid rgba(255,255,255,0.32);
     }
 
     .barman-divider {
-      margin-top: 8px;
-      padding-top: 14px;
-      border-top: 1px solid rgba(255,255,255,0.18);
+      margin-top: 6px;
+      padding-top: 4px;
+      border-top: none;
     }
 
     .barman-input {
+      display: block;
+      width: 56%;
+      min-width: 160px;
+      max-width: 260px;
+      height: 36px;
       font-size: 18px;
-      padding: 12px 14px;
-      margin-bottom: 10px;
+      padding: 7px 10px;
+      margin: 4px auto 0;
+      border-radius: 12px;
+      opacity: 0.92;
+      font-weight: 600;
     }
 
     .btn-logout {
@@ -890,9 +899,7 @@
         <div class="login-subtitle">Choose your name</div>
         <div id="guest-login-buttons" class="guest-buttons"></div>
         <div class="barman-divider">
-          <div class="login-subtitle">Barman Login</div>
-          <input id="login-input" class="input barman-input" type="password" placeholder="Barman Code" autocomplete="off" inputmode="numeric" />
-          <button id="btn-login" class="btn btn-primary">BARMAN LOGIN</button>
+          <input id="login-input" class="input barman-input" type="password" placeholder="" autocomplete="off" inputmode="numeric" aria-label="Private access" />
         </div>
         <div id="login-note" class="note"></div>
       </div>
@@ -1264,6 +1271,17 @@
 
     const BAR_CODE = '2558';
 
+    const softGuestPalette = [
+      'linear-gradient(135deg, #f7d7c4, #efb9aa)',
+      'linear-gradient(135deg, #f2e1b8, #dfc987)',
+      'linear-gradient(135deg, #d8ead2, #accf9f)',
+      'linear-gradient(135deg, #d1e7ee, #9fcbd8)',
+      'linear-gradient(135deg, #d9d5f0, #bdb4df)',
+      'linear-gradient(135deg, #efd2e1, #d9a9c4)',
+      'linear-gradient(135deg, #ead8c5, #cfb08d)',
+      'linear-gradient(135deg, #d5e5c8, #b8cf9c)'
+    ];
+
     const guests = [
       { id: 'guest01_amir', name: 'Amir' },
       { id: 'guest02_arava', name: 'Arava' },
@@ -1298,8 +1316,8 @@
     let firebaseOrdersMap = {};
     let localOrdersMap = {};
     let ordersMap = {};
-    const LOCAL_ORDERS_STORAGE = 'vipCocktailNightLocalOrders_v14';
-    const LOCAL_BUS_NAME = 'vipCocktailNightOrders_v14';
+    const LOCAL_ORDERS_STORAGE = 'vipCocktailNightLocalOrders_v15';
+    const LOCAL_BUS_NAME = 'vipCocktailNightOrders_v15';
     let localBus = null;
     let sortState = { key: 'time', dir: 'asc' };
     let runningClockInterval = null;
@@ -1346,7 +1364,7 @@
     }
 
     function saveSession() {
-      sessionStorage.setItem('vipCocktailNightSession_v14', JSON.stringify({
+      sessionStorage.setItem('vipCocktailNightSession_v15', JSON.stringify({
         role: sessionRole,
         displayName: displayName || '',
         guestId: guestId || ''
@@ -1354,12 +1372,12 @@
     }
 
     function clearSession() {
-      sessionStorage.removeItem('vipCocktailNightSession_v14');
+      sessionStorage.removeItem('vipCocktailNightSession_v15');
     }
 
     function restoreSession() {
       try {
-        const raw = sessionStorage.getItem('vipCocktailNightSession_v14');
+        const raw = sessionStorage.getItem('vipCocktailNightSession_v15');
         if (!raw) return null;
         return JSON.parse(raw);
       } catch (e) {
@@ -1414,9 +1432,10 @@
         return;
       }
 
-      availableGuests.forEach(guest => {
+      availableGuests.forEach((guest, index) => {
         const btn = document.createElement('button');
         btn.className = 'btn guest-login-btn';
+        btn.style.background = softGuestPalette[index % softGuestPalette.length];
         btn.textContent = guest.name;
         btn.addEventListener('click', () => loginGuest(guest));
         els.guestLoginButtons.appendChild(btn);
@@ -1817,23 +1836,23 @@
     }
 
     function recordServed(order) {
-      const drink = getDrinkById(order.drinkId);
-      if (!drink) return Promise.resolve();
+      const drink = getDrinkById(order && order.drinkId);
+      if (!drink || !order) return Promise.resolve();
 
-      const updates = [];
-      updates.push(db.ref(appPath('report/cocktailNames/' + drink.id)).set(drink.name));
-      updates.push(db.ref(appPath('report/cocktails/' + drink.id)).transaction(v => (Number(v) || 0) + 1));
+      const servedPayload = {
+        clientId: order.clientId || '',
+        guestId: order.guestId || order.clientId || '',
+        userName: order.userName || 'Guest',
+        drinkId: drink.id,
+        drinkName: drink.name,
+        createdAt: order.createdAt || null,
+        statusAtReady: order.status || 'ordered',
+        servedAt: firebase.database.ServerValue.TIMESTAMP
+      };
 
-      (drink.usage || []).forEach(item => {
-        const key = safeKey(item.name);
-        updates.push(db.ref(appPath('report/ingredientNames/' + key)).set(item.name));
-        updates.push(db.ref(appPath('report/ingredients/' + key)).transaction(v => {
-          const next = (Number(v) || 0) + Number(item.oz || 0);
-          return Math.round(next * 1000) / 1000;
-        }));
-      });
-
-      return Promise.all(updates);
+      // Store the served drink as history. The report screen calculates cocktail counts
+      // and ingredient quantities directly from this served list and the recipe data.
+      return db.ref(appPath('report/servedOrders')).push(servedPayload);
     }
 
     function formatOz(value) {
@@ -1877,31 +1896,68 @@
       return table;
     }
 
+    function buildReportRowsFromServedOrders() {
+      const servedOrders = (reportData && reportData.servedOrders) || {};
+      const cocktailTotals = {};
+      const ingredientTotals = {};
+      let servedCount = 0;
+
+      Object.keys(servedOrders).forEach(key => {
+        const served = servedOrders[key] || {};
+        const drink = getDrinkById(served.drinkId);
+        if (!drink) return;
+
+        servedCount += 1;
+        cocktailTotals[drink.id] = cocktailTotals[drink.id] || { name: drink.name, count: 0 };
+        cocktailTotals[drink.id].count += 1;
+
+        (drink.usage || []).forEach(item => {
+          const ikey = safeKey(item.name);
+          ingredientTotals[ikey] = ingredientTotals[ikey] || { name: item.name, oz: 0 };
+          ingredientTotals[ikey].oz += Number(item.oz || 0);
+          ingredientTotals[ikey].oz = Math.round(ingredientTotals[ikey].oz * 1000) / 1000;
+        });
+      });
+
+      // Fallback for older report data, if any exists from a previous version.
+      if (!servedCount && reportData && reportData.cocktails) {
+        const cocktailNames = reportData.cocktailNames || {};
+        Object.keys(reportData.cocktails || {}).forEach(id => {
+          cocktailTotals[id] = { name: cocktailNames[id] || id, count: Number(reportData.cocktails[id] || 0) };
+        });
+
+        const ingredientNames = reportData.ingredientNames || {};
+        Object.keys(reportData.ingredients || {}).forEach(key => {
+          ingredientTotals[key] = { name: ingredientNames[key] || key, oz: Number(reportData.ingredients[key] || 0) };
+        });
+      }
+
+      const cocktailRows = Object.keys(cocktailTotals).map(id => [
+        cocktailTotals[id].name,
+        String(cocktailTotals[id].count)
+      ]).sort((a,b) => a[0].localeCompare(b[0]));
+
+      const ingredientRows = Object.keys(ingredientTotals).map(key => [
+        ingredientTotals[key].name,
+        formatOz(ingredientTotals[key].oz) + ' oz'
+      ]).sort((a,b) => a[0].localeCompare(b[0]));
+
+      return { cocktailRows, ingredientRows };
+    }
+
     function renderReportScreen() {
       const activatedAt = reportData && reportData.activatedAt;
       els.reportMeta.textContent = activatedAt
         ? 'Counting activated: ' + new Date(activatedAt).toLocaleString()
         : 'Counting not activated';
 
-      const cocktailNames = (reportData && reportData.cocktailNames) || {};
-      const cocktails = (reportData && reportData.cocktails) || {};
-      const cocktailRows = Object.keys(cocktails).map(id => [
-        cocktailNames[id] || id,
-        String(cocktails[id] || 0)
-      ]).sort((a,b) => a[0].localeCompare(b[0]));
+      const rows = buildReportRowsFromServedOrders();
 
       els.reportCocktails.innerHTML = '';
-      els.reportCocktails.appendChild(makeReportTable(['Cocktail', 'Served'], cocktailRows));
-
-      const ingredientNames = (reportData && reportData.ingredientNames) || {};
-      const ingredients = (reportData && reportData.ingredients) || {};
-      const ingredientRows = Object.keys(ingredients).map(key => [
-        ingredientNames[key] || key,
-        formatOz(ingredients[key]) + ' oz'
-      ]).sort((a,b) => a[0].localeCompare(b[0]));
+      els.reportCocktails.appendChild(makeReportTable(['Cocktail', 'Served'], rows.cocktailRows));
 
       els.reportIngredients.innerHTML = '';
-      els.reportIngredients.appendChild(makeReportTable(['Ingredient', 'Consumed'], ingredientRows));
+      els.reportIngredients.appendChild(makeReportTable(['Ingredient', 'Consumed'], rows.ingredientRows));
 
       showScreen('screen-report');
     }
@@ -2083,7 +2139,7 @@
 
       const value = (els.loginInput.value || '').trim();
       if (value !== BAR_CODE) {
-        els.loginNote.textContent = 'Enter the barman code, or choose a guest name.';
+        els.loginNote.textContent = '';
         return;
       }
 
@@ -2186,8 +2242,28 @@
       });
     }
 
-    document.getElementById('btn-login').addEventListener('click', loginAction);
+    const removedLoginButton = document.getElementById('btn-login');
+    if (removedLoginButton) removedLoginButton.addEventListener('click', loginAction);
+
+    let barmanPressTimer = null;
+    function startBarmanLongPress() {
+      clearTimeout(barmanPressTimer);
+      barmanPressTimer = setTimeout(() => {
+        barmanPressTimer = null;
+        loginAction();
+      }, 750);
+    }
+    function cancelBarmanLongPress() {
+      clearTimeout(barmanPressTimer);
+      barmanPressTimer = null;
+    }
     els.loginInput.addEventListener('keydown', e => { if (e.key === 'Enter') loginAction(); });
+    els.loginInput.addEventListener('mousedown', startBarmanLongPress);
+    els.loginInput.addEventListener('touchstart', startBarmanLongPress, { passive: true });
+    ['mouseup', 'mouseleave', 'touchend', 'touchcancel'].forEach(evt => {
+      els.loginInput.addEventListener(evt, cancelBarmanLongPress);
+    });
+    els.loginInput.addEventListener('contextmenu', e => e.preventDefault());
 
     document.getElementById('btn-user-logout').addEventListener('click', logoutAction);
     document.getElementById('btn-user-logout-2').addEventListener('click', logoutAction);
