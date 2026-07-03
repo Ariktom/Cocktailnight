@@ -848,7 +848,7 @@
       <button class="btn btn-logout" id="btn-user-logout">Logout</button>
     </div>
 
-    <div id="bar-status-banner" class="status-banner status-open">ORDERS OPEN</div>
+    <div id="bar-status-banner" class="status-banner status-open" style="display:none"></div>
     <div id="active-order-banner" class="active-order-banner" style="display:none"></div>
 
     <div id="drink-grid" class="tile-grid"></div>
@@ -899,11 +899,11 @@
       </button>
       <div class="collapse-body">
         <div class="control-row">
-          <button id="btn-bar-open" class="btn bar-open-btn active" disabled>ORDERS ALWAYS OPEN</button>
+          <button id="btn-bar-open" class="btn bar-open-btn active" style="display:none" disabled></button>
           <button id="btn-reset-all" class="btn reset-all-btn">RESET ALL</button>
           <button id="btn-activate" class="btn activate-btn">ACTIVATE</button>
           <button id="btn-report" class="btn report-btn">REPORT</button>
-          <div id="bar-open-status" class="mini-status">Status: ORDERS ALWAYS OPEN</div>
+          <div id="bar-open-status" class="mini-status" style="display:none"></div>
           <div id="counting-status" class="mini-status">Counting: OFF</div>
         </div>
 
@@ -1001,7 +1001,7 @@
     var db = firebase.database();
 
     const APP_ID = 'bartender-app-v5';
-    // v11: Bar-open labels removed; guests can always place orders; cancel button beside order button.
+    // v12: Basic order flow fixed. Bar-open labels hidden; guests can order immediately; cancel button beside order button.
     const APP_ROOT = 'apps/' + APP_ID;
     const appPath = (path='') => path ? (APP_ROOT + '/' + path) : APP_ROOT;
 
@@ -1211,7 +1211,12 @@
     let reportActive = false;
     let reportData = {};
     let myActiveOrder = null;
+    let firebaseOrdersMap = {};
+    let localOrdersMap = {};
     let ordersMap = {};
+    const LOCAL_ORDERS_STORAGE = 'vipCocktailNightLocalOrders_v12';
+    const LOCAL_BUS_NAME = 'vipCocktailNightOrders_v12';
+    let localBus = null;
     let sortState = { key: 'time', dir: 'asc' };
     let runningClockInterval = null;
     let listenersAttached = false;
@@ -1334,14 +1339,24 @@
 
     function updateBarStatusBanner() {
       // Bar-open restriction removed: guests can always order.
+      // The old status labels are deliberately hidden because they are unnecessary.
       barOpen = true;
-      els.barStatusBanner.textContent = '';
-      els.barStatusBanner.className = 'status-banner status-open';
-      els.barOpenStatus.textContent = '';
+      if (els.barStatusBanner) {
+        els.barStatusBanner.textContent = '';
+        els.barStatusBanner.style.display = 'none';
+        els.barStatusBanner.className = 'status-banner status-open';
+      }
+      if (els.barOpenStatus) {
+        els.barOpenStatus.textContent = '';
+        els.barOpenStatus.style.display = 'none';
+      }
+      if (els.btnBarOpen) {
+        els.btnBarOpen.textContent = '';
+        els.btnBarOpen.style.display = 'none';
+        els.btnBarOpen.disabled = true;
+        els.btnBarOpen.classList.add('active');
+      }
       els.countingStatus.textContent = 'Counting: ' + (reportActive ? 'ACTIVE' : 'OFF');
-      els.btnBarOpen.classList.add('active');
-      els.btnBarOpen.textContent = '';
-      els.btnBarOpen.disabled = true;
       els.btnActivate.classList.toggle('active', reportActive);
       els.btnActivate.textContent = reportActive ? 'ACTIVE' : 'ACTIVATE';
       renderDrinkGrid();
@@ -1353,6 +1368,58 @@
       const m = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
       const s = String(totalSeconds % 60).padStart(2, '0');
       return `${h}:${m}:${s}`;
+    }
+
+    function getClientKey() {
+      return userId || null;
+    }
+
+    function loadLocalOrders() {
+      try {
+        const raw = localStorage.getItem(LOCAL_ORDERS_STORAGE);
+        localOrdersMap = raw ? (JSON.parse(raw) || {}) : {};
+      } catch (e) {
+        localOrdersMap = {};
+      }
+    }
+
+    function saveLocalOrders() {
+      try {
+        localStorage.setItem(LOCAL_ORDERS_STORAGE, JSON.stringify(localOrdersMap || {}));
+      } catch (e) {}
+    }
+
+    function publishLocalOrders() {
+      saveLocalOrders();
+      try {
+        if (localBus) localBus.postMessage({ type: 'orders', orders: localOrdersMap || {} });
+      } catch (e) {}
+    }
+
+    function rebuildOrdersMap() {
+      ordersMap = Object.assign({}, localOrdersMap || {}, firebaseOrdersMap || {});
+      updateMyOrderFromMap();
+      if (sessionRole === 'bartender') renderOrdersTable();
+    }
+
+    function putLocalOrder(order, shouldPublish = true) {
+      if (!order || !order.clientId) return;
+      localOrdersMap[order.clientId] = order;
+      if (shouldPublish) publishLocalOrders();
+      rebuildOrdersMap();
+    }
+
+    function removeLocalOrder(clientId, shouldPublish = true) {
+      if (!clientId) return;
+      delete localOrdersMap[clientId];
+      if (shouldPublish) publishLocalOrders();
+      rebuildOrdersMap();
+    }
+
+    function clearLocalOrders(shouldPublish = true) {
+      localOrdersMap = {};
+      if (shouldPublish) publishLocalOrders();
+      rebuildOrdersMap();
     }
 
     function setActiveOrderBanner() {
@@ -1460,70 +1527,64 @@
     }
 
     function updateMyOrderFromMap() {
-      myActiveOrder = ordersMap[userId] || null;
+      const key = getClientKey();
+      myActiveOrder = key ? (ordersMap[key] || null) : null;
       setActiveOrderBanner();
       updateUserOrderButton();
       renderDrinkGrid();
     }
 
     function submitOrder() {
-      if (sessionRole !== 'user') return;
-      if (!userId) {
+      if (sessionRole !== 'user') {
+        alert('Please login as a guest before ordering.');
+        return;
+      }
+      const clientId = getClientKey();
+      if (!clientId) {
         alert('Connection is not ready yet. Refresh the page and try again.');
         return;
       }
       if (myActiveOrder) return;
 
       const drink = getDrinkById(selectedDrinkId);
-      if (!drink) return;
+      if (!drink) {
+        alert('Please choose a cocktail again.');
+        return;
+      }
 
+      const now = Date.now();
       const localOrder = {
-        clientId: userId,
-        userName: displayName,
+        clientId: clientId,
+        userName: displayName || 'Guest',
         drinkId: drink.id,
         drinkName: drink.name,
         status: 'ordered',
-        createdAt: Date.now(),
+        createdAt: now,
         preparingAt: null
       };
 
-      // Immediate visible feedback on the guest screen. Firebase will then sync it to bartender.
-      myActiveOrder = localOrder;
-      ordersMap[userId] = localOrder;
-      updateUserOrderButton();
-      setActiveOrderBanner();
-      renderDrinkGrid();
+      // Immediate visible feedback on the guest screen and same-browser bartender tab.
+      putLocalOrder(localOrder);
 
-      const payload = {
-        ...localOrder,
+      const payload = Object.assign({}, localOrder, {
         createdAt: firebase.database.ServerValue.TIMESTAMP
-      };
+      });
 
-      db.ref(appPath('orders/' + userId)).set(payload).catch(err => {
-        myActiveOrder = null;
-        delete ordersMap[userId];
-        updateUserOrderButton();
-        setActiveOrderBanner();
-        renderDrinkGrid();
-        alert('Order was not sent. Firebase error: ' + (err && err.message ? err.message : err));
+      db.ref(appPath('orders/' + clientId)).set(payload).then(() => {
+        // Firebase is the live multi-device source; the local mirror remains only as instant feedback/fallback.
+      }).catch(err => {
+        alert('Order was shown locally, but was not saved online. Firebase error: ' + (err && err.message ? err.message : err));
       });
     }
 
     function cancelMyOrder() {
       if (!myActiveOrder || myActiveOrder.status !== 'ordered') return;
+      const clientId = myActiveOrder.clientId || getClientKey();
       const previous = myActiveOrder;
-      myActiveOrder = null;
-      delete ordersMap[userId];
-      updateUserOrderButton();
-      setActiveOrderBanner();
-      renderDrinkGrid();
-      db.ref(appPath('orders/' + userId)).remove().catch(err => {
-        myActiveOrder = previous;
-        ordersMap[userId] = previous;
-        updateUserOrderButton();
-        setActiveOrderBanner();
-        renderDrinkGrid();
-        alert('Order was not cancelled. Firebase error: ' + (err && err.message ? err.message : err));
+      removeLocalOrder(clientId);
+      db.ref(appPath('orders/' + clientId)).remove().catch(err => {
+        putLocalOrder(previous);
+        alert('Order was not cancelled online. Firebase error: ' + (err && err.message ? err.message : err));
       });
     }
 
@@ -1533,7 +1594,10 @@
 
     function resetAllOrders() {
       if (!confirm('Reset all orders?')) return;
-      db.ref(appPath('orders')).remove();
+      clearLocalOrders();
+      db.ref(appPath('orders')).remove().catch(err => {
+        alert('Online reset failed. Firebase error: ' + (err && err.message ? err.message : err));
+      });
     }
 
     function safeKey(name) {
@@ -1643,21 +1707,32 @@
 
     function markReady(clientId) {
       const order = ordersMap[clientId];
-      const finish = () => db.ref(appPath('orders/' + clientId)).remove();
+      const finish = () => {
+        removeLocalOrder(clientId);
+        return db.ref(appPath('orders/' + clientId)).remove();
+      };
 
       if (reportActive && order) {
         recordServed(order).then(finish).catch(err => {
           alert('Report count failed: ' + err.message);
         });
       } else {
-        finish();
+        finish().catch(err => {
+          alert('Order was cleared locally, but online READY failed. Firebase error: ' + (err && err.message ? err.message : err));
+        });
       }
     }
 
     function startPreparing(clientId) {
+      const current = ordersMap[clientId];
+      if (current) {
+        putLocalOrder(Object.assign({}, current, { status: 'preparing', preparingAt: Date.now() }));
+      }
       db.ref(appPath('orders/' + clientId)).update({
         status: 'preparing',
         preparingAt: firebase.database.ServerValue.TIMESTAMP
+      }).catch(err => {
+        alert('Preparation status was shown locally, but was not saved online. Firebase error: ' + (err && err.message ? err.message : err));
       });
     }
 
@@ -1851,9 +1926,10 @@
       });
 
       db.ref(appPath('orders')).on('value', snap => {
-        ordersMap = snap.val() || {};
-        updateMyOrderFromMap();
-        if (sessionRole === 'bartender') renderOrdersTable();
+        firebaseOrdersMap = snap.val() || {};
+        rebuildOrdersMap();
+      }, err => {
+        alert('Online orders listener failed. Firebase error: ' + (err && err.message ? err.message : err));
       });
     }
 
@@ -1871,7 +1947,7 @@
     els.userOrderBtn.addEventListener('click', submitOrder);
     els.cancelOrderBtn.addEventListener('click', cancelMyOrder);
 
-    // Bar open restriction removed; button is disabled and kept only as a status label.
+    // Bar open restriction removed.
     document.getElementById('btn-bar-open').addEventListener('click', () => updateBarStatusBanner());
     document.getElementById('btn-reset-all').addEventListener('click', resetAllOrders);
     document.getElementById('btn-activate').addEventListener('click', activateCounting);
@@ -1885,11 +1961,33 @@
       els.collapseArrow.textContent = els.collapseCard.classList.contains('open') ? '▾' : '▸';
     });
 
+    function setupLocalOrderBus() {
+      if (localBus) return;
+      try {
+        localBus = new BroadcastChannel(LOCAL_BUS_NAME);
+        localBus.onmessage = ev => {
+          if (!ev || !ev.data || ev.data.type !== 'orders') return;
+          localOrdersMap = ev.data.orders || {};
+          saveLocalOrders();
+          rebuildOrdersMap();
+        };
+      } catch (e) {}
+
+      window.addEventListener('storage', ev => {
+        if (ev.key !== LOCAL_ORDERS_STORAGE) return;
+        loadLocalOrders();
+        rebuildOrdersMap();
+      });
+    }
+
     auth.onAuthStateChanged(user => {
       if (user) {
         userId = user.uid;
         authReady = true;
+        loadLocalOrders();
+        setupLocalOrderBus();
         attachRealtimeListeners();
+        rebuildOrdersMap();
 
         const saved = restoreSession();
         if (saved && saved.role) {
