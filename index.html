@@ -128,6 +128,43 @@
       padding: 14px 18px;
     }
 
+    .login-subtitle {
+      margin: 18px 0 10px;
+      font-size: 17px;
+      font-weight: 900;
+      color: #eaf4ff;
+      letter-spacing: 0.2px;
+    }
+
+    .guest-buttons {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin: 10px 0 18px;
+    }
+
+    .guest-login-btn {
+      min-height: 48px;
+      background: linear-gradient(135deg, #ff8a00, #e53935);
+      color: #ffffff;
+      font-size: 18px;
+      padding: 10px 8px;
+      border-radius: 14px;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.35);
+    }
+
+    .barman-divider {
+      margin-top: 8px;
+      padding-top: 14px;
+      border-top: 1px solid rgba(255,255,255,0.18);
+    }
+
+    .barman-input {
+      font-size: 18px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+    }
+
     .btn-logout {
       background: #ffffff;
       color: #173457;
@@ -827,6 +864,8 @@
       .prep-btn { min-width: 52px; padding: 9px 12px; }
       .recipe-shortcuts { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
       .recipe-shortcut-btn { min-height: 42px; font-size: 15px; }
+      .guest-buttons { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+      .guest-login-btn { font-size: 16px; min-height: 44px; }
       .user-ingredients-wrap .ingredient-list { font-size: 23px; padding-left: 24px; }
       .menu-ornament { font-size: 22px; margin-top: 24px; }
       .menu-ornament::before,
@@ -848,8 +887,13 @@
     <div class="login-wrap">
       <div class="login-card card">
         <h1 class="app-title">VIP Cocktail Night<br>July 17, 2026</h1>
-        <input id="login-input" class="input" type="text" placeholder="Enter Name" autocomplete="off" />
-        <button id="btn-login" class="btn btn-primary">LOGIN</button>
+        <div class="login-subtitle">Choose your name</div>
+        <div id="guest-login-buttons" class="guest-buttons"></div>
+        <div class="barman-divider">
+          <div class="login-subtitle">Barman Login</div>
+          <input id="login-input" class="input barman-input" type="password" placeholder="Barman Code" autocomplete="off" inputmode="numeric" />
+          <button id="btn-login" class="btn btn-primary">BARMAN LOGIN</button>
+        </div>
         <div id="login-note" class="note"></div>
       </div>
     </div>
@@ -1220,20 +1264,42 @@
 
     const BAR_CODE = '2558';
 
+    const guests = [
+      { id: 'guest01_amir', name: 'Amir' },
+      { id: 'guest02_arava', name: 'Arava' },
+      { id: 'guest03_assaf', name: 'Assaf' },
+      { id: 'guest04_ayelet', name: 'Ayelet' },
+      { id: 'guest05_dan', name: 'Dan' },
+      { id: 'guest06_erez', name: 'Erez' },
+      { id: 'guest07_franck', name: 'Franck' },
+      { id: 'guest08_galit', name: 'Galit' },
+      { id: 'guest09_hagit', name: 'Hagit' },
+      { id: 'guest10_maya', name: 'Maya' },
+      { id: 'guest11_miki', name: 'Miki' },
+      { id: 'guest12_nivi', name: 'Nivi' },
+      { id: 'guest13_nurit', name: 'Nurit' },
+      { id: 'guest14_rani', name: 'Rani' },
+      { id: 'guest15_sagit', name: 'Sagit' },
+      { id: 'guest16_shaked', name: 'Shaked' }
+    ];
+
     let authReady = false;
     let userId = null;
     let sessionRole = null;
     let displayName = '';
+    let guestId = null;
     let selectedDrinkId = null;
     let barOpen = true;
     let reportActive = false;
     let reportData = {};
+    let loggedGuestsMap = {};
+    let hadGuestPresence = false;
     let myActiveOrder = null;
     let firebaseOrdersMap = {};
     let localOrdersMap = {};
     let ordersMap = {};
-    const LOCAL_ORDERS_STORAGE = 'vipCocktailNightLocalOrders_v13';
-    const LOCAL_BUS_NAME = 'vipCocktailNightOrders_v13';
+    const LOCAL_ORDERS_STORAGE = 'vipCocktailNightLocalOrders_v14';
+    const LOCAL_BUS_NAME = 'vipCocktailNightOrders_v14';
     let localBus = null;
     let sortState = { key: 'time', dir: 'asc' };
     let runningClockInterval = null;
@@ -1242,6 +1308,7 @@
     const els = {
       loginInput: document.getElementById('login-input'),
       loginNote: document.getElementById('login-note'),
+      guestLoginButtons: document.getElementById('guest-login-buttons'),
       drinkGrid: document.getElementById('drink-grid'),
       userWelcome: document.getElementById('user-welcome'),
       barStatusBanner: document.getElementById('bar-status-banner'),
@@ -1279,16 +1346,20 @@
     }
 
     function saveSession() {
-      localStorage.setItem('vipCocktailNightSession', JSON.stringify({ role: sessionRole, displayName: displayName || '' }));
+      sessionStorage.setItem('vipCocktailNightSession_v14', JSON.stringify({
+        role: sessionRole,
+        displayName: displayName || '',
+        guestId: guestId || ''
+      }));
     }
 
     function clearSession() {
-      localStorage.removeItem('vipCocktailNightSession');
+      sessionStorage.removeItem('vipCocktailNightSession_v14');
     }
 
     function restoreSession() {
       try {
-        const raw = localStorage.getItem('vipCocktailNightSession');
+        const raw = sessionStorage.getItem('vipCocktailNightSession_v14');
         if (!raw) return null;
         return JSON.parse(raw);
       } catch (e) {
@@ -1326,6 +1397,61 @@
         btn.addEventListener('click', () => openBartenderRecipeScreen(drink.id));
         els.recipeShortcuts.appendChild(btn);
       });
+    }
+
+
+    function renderGuestLoginButtons() {
+      if (!els.guestLoginButtons) return;
+      els.guestLoginButtons.innerHTML = '';
+
+      const availableGuests = guests.filter(g => !(loggedGuestsMap && loggedGuestsMap[g.id]));
+      if (!availableGuests.length) {
+        const div = document.createElement('div');
+        div.className = 'small-muted';
+        div.style.gridColumn = '1 / -1';
+        div.textContent = 'All guests are already logged in.';
+        els.guestLoginButtons.appendChild(div);
+        return;
+      }
+
+      availableGuests.forEach(guest => {
+        const btn = document.createElement('button');
+        btn.className = 'btn guest-login-btn';
+        btn.textContent = guest.name;
+        btn.addEventListener('click', () => loginGuest(guest));
+        els.guestLoginButtons.appendChild(btn);
+      });
+    }
+
+    function setGuestPresence(active) {
+      if (!guestId || sessionRole !== 'user') return Promise.resolve();
+      const ref = db.ref(appPath('state/loggedGuests/' + guestId));
+      if (active) {
+        return ref.set({
+          name: displayName || 'Guest',
+          uid: userId || '',
+          loggedAt: firebase.database.ServerValue.TIMESTAMP
+        }).then(() => {
+          try { ref.onDisconnect().remove(); } catch (e) {}
+        });
+      }
+      try { ref.onDisconnect().cancel(); } catch (e) {}
+      return ref.remove();
+    }
+
+    function loginGuest(guest) {
+      if (!authReady || !guest) return;
+      sessionRole = 'user';
+      displayName = guest.name;
+      guestId = guest.id;
+      hadGuestPresence = false;
+      selectedDrinkId = null;
+      saveSession();
+      els.loginNote.textContent = '';
+      setGuestPresence(true).catch(err => {
+        alert('Guest login was shown locally, but was not saved online. Firebase error: ' + (err && err.message ? err.message : err));
+      });
+      applySessionView();
     }
 
     function renderDrinkGrid() {
@@ -1390,7 +1516,8 @@
     }
 
     function getClientKey() {
-      return userId || null;
+      if (sessionRole === 'user' && guestId) return guestId;
+      return null;
     }
 
     function loadLocalOrders() {
@@ -1428,6 +1555,7 @@
 
       return {
         clientId: clientId,
+        guestId: raw.guestId || clientId,
         userName: raw.userName || raw.guestName || raw.name || 'Guest',
         drinkId: raw.drinkId || raw.cocktailId || '',
         drinkName: raw.drinkName || raw.cocktailName || raw.order || 'Drink',
@@ -1612,6 +1740,7 @@
       const now = Date.now();
       const localOrder = {
         clientId: clientId,
+        guestId: guestId || clientId,
         userName: displayName || 'Guest',
         drinkId: drink.id,
         drinkName: drink.name,
@@ -1650,9 +1779,17 @@
     }
 
     function resetAllOrders() {
-      if (!confirm('Reset all orders?')) return;
+      if (!confirm('Reset all orders, logged-in guests, and report totals?')) return;
       clearLocalOrders();
-      db.ref(appPath('orders')).remove().catch(err => {
+      reportActive = false;
+      reportData = {};
+      updateBarStatusBanner();
+      Promise.all([
+        db.ref(appPath('orders')).remove(),
+        db.ref(appPath('report')).remove(),
+        db.ref(appPath('state/reportActive')).set(false),
+        db.ref(appPath('state/loggedGuests')).remove()
+      ]).catch(err => {
         alert('Online reset failed. Firebase error: ' + (err && err.message ? err.message : err));
       });
     }
@@ -1666,10 +1803,17 @@
 
     function activateCounting() {
       if (reportActive) {
-        if (!confirm('Counting is already active. Reset report totals and start again?')) return;
+        updateBarStatusBanner();
+        return;
       }
-      db.ref(appPath('report')).set({ activatedAt: firebase.database.ServerValue.TIMESTAMP });
-      db.ref(appPath('state/reportActive')).set(true);
+      reportActive = true;
+      updateBarStatusBanner();
+      db.ref(appPath('report')).set({ activatedAt: firebase.database.ServerValue.TIMESTAMP }).catch(err => {
+        alert('Report activation failed. Firebase error: ' + (err && err.message ? err.message : err));
+      });
+      db.ref(appPath('state/reportActive')).set(true).catch(err => {
+        alert('Counting status was not saved online. Firebase error: ' + (err && err.message ? err.message : err));
+      });
     }
 
     function recordServed(order) {
@@ -1929,6 +2073,7 @@
         stopRunningClockRefresh();
       } else {
         stopRunningClockRefresh();
+        renderGuestLoginButtons();
         showScreen('screen-login');
       }
     }
@@ -1937,19 +2082,14 @@
       if (!authReady) return;
 
       const value = (els.loginInput.value || '').trim();
-      if (!value) {
-        els.loginNote.textContent = 'Please enter a name.';
+      if (value !== BAR_CODE) {
+        els.loginNote.textContent = 'Enter the barman code, or choose a guest name.';
         return;
       }
 
-      if (value === BAR_CODE) {
-        sessionRole = 'bartender';
-        displayName = 'Bartender';
-      } else {
-        sessionRole = 'user';
-        displayName = value;
-      }
-
+      sessionRole = 'bartender';
+      displayName = 'Bartender';
+      guestId = null;
       saveSession();
       els.loginInput.value = '';
       els.loginNote.textContent = '';
@@ -1957,9 +2097,17 @@
     }
 
     function logoutAction() {
+      const wasUser = sessionRole === 'user';
+      const oldGuestId = guestId;
+      if (wasUser && oldGuestId) {
+        db.ref(appPath('state/loggedGuests/' + oldGuestId)).remove().catch(() => {});
+      }
       sessionRole = null;
       displayName = '';
+      guestId = null;
+      hadGuestPresence = false;
       selectedDrinkId = null;
+      myActiveOrder = null;
       clearSession();
       applySessionView();
     }
@@ -1982,6 +2130,29 @@
 
       db.ref(appPath('report')).on('value', snap => {
         reportData = snap.val() || {};
+      });
+
+      db.ref(appPath('state/loggedGuests')).on('value', snap => {
+        const nextLoggedGuests = snap.val() || {};
+        const currentGuestId = guestId;
+        const hasCurrentNow = !!(currentGuestId && nextLoggedGuests[currentGuestId]);
+        loggedGuestsMap = nextLoggedGuests;
+        renderGuestLoginButtons();
+
+        if (sessionRole === 'user' && currentGuestId) {
+          if (hasCurrentNow) {
+            hadGuestPresence = true;
+          } else if (hadGuestPresence) {
+            sessionRole = null;
+            displayName = '';
+            guestId = null;
+            hadGuestPresence = false;
+            selectedDrinkId = null;
+            myActiveOrder = null;
+            clearSession();
+            applySessionView();
+          }
+        }
       });
 
       const ordersRef = db.ref(appPath('orders'));
@@ -2076,10 +2247,15 @@
         if (saved && saved.role) {
           sessionRole = saved.role;
           displayName = saved.displayName || (saved.role === 'bartender' ? 'Bartender' : '');
+          guestId = saved.guestId || null;
+          if (sessionRole === 'user' && guestId) {
+            setGuestPresence(true).catch(() => {});
+          }
         }
 
         renderDrinkGrid();
         renderRecipeShortcuts();
+        renderGuestLoginButtons();
         updateBarStatusBanner();
         refreshSortMarks();
         applySessionView();
