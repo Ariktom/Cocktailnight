@@ -504,22 +504,7 @@
       min-width: 170px;
     }
     .bar-open-btn.active {
-      background: linear-gradient(135deg, #ff1744, #b00020);
       box-shadow: 0 0 0 3px rgba(0, 200, 83, 0.28), 0 6px 14px rgba(0,0,0,0.28);
-    }
-    .firebase-status {
-      width: 100%;
-      margin-top: 4px;
-      font-size: 13px;
-      font-weight: 700;
-      color: #a8d8ff;
-      opacity: 0.95;
-    }
-    .firebase-status.error {
-      color: #ffb3b3;
-    }
-    .firebase-status.ok {
-      color: #b7ffcf;
     }
 
     .reset-all-btn {
@@ -852,7 +837,7 @@
       <button class="btn btn-logout" id="btn-user-logout">Logout</button>
     </div>
 
-    <div id="bar-status-banner" class="status-banner status-closed">BAR CLOSED</div>
+    <div id="bar-status-banner" class="status-banner status-open">ORDERS OPEN</div>
     <div id="active-order-banner" class="active-order-banner" style="display:none"></div>
 
     <div id="drink-grid" class="tile-grid"></div>
@@ -903,13 +888,12 @@
       </button>
       <div class="collapse-body">
         <div class="control-row">
-          <button id="btn-bar-open" class="btn bar-open-btn">BAR OPEN</button>
+          <button id="btn-bar-open" class="btn bar-open-btn active" disabled>ORDERS ALWAYS OPEN</button>
           <button id="btn-reset-all" class="btn reset-all-btn">RESET ALL</button>
           <button id="btn-activate" class="btn activate-btn">ACTIVATE</button>
           <button id="btn-report" class="btn report-btn">REPORT</button>
-          <div id="bar-open-status" class="mini-status">Status: CLOSED</div>
+          <div id="bar-open-status" class="mini-status">Status: ORDERS ALWAYS OPEN</div>
           <div id="counting-status" class="mini-status">Counting: OFF</div>
-          <div id="firebase-status" class="firebase-status">Firebase: connecting...</div>
         </div>
 
         <div class="recipe-shortcuts-wrap">
@@ -1006,7 +990,7 @@
     var db = firebase.database();
 
     const APP_ID = 'bartender-app-v5';
-    const BUILD_VERSION = 'v9-debug';
+    // v10: Bar-open restriction removed; guests can always place orders.
     const APP_ROOT = 'apps/' + APP_ID;
     const appPath = (path='') => path ? (APP_ROOT + '/' + path) : APP_ROOT;
 
@@ -1212,7 +1196,7 @@
     let sessionRole = null;
     let displayName = '';
     let selectedDrinkId = null;
-    let barOpen = false;
+    let barOpen = true;
     let reportActive = false;
     let reportData = {};
     let myActiveOrder = null;
@@ -1243,7 +1227,6 @@
       btnActivate: document.getElementById('btn-activate'),
       countingStatus: document.getElementById('counting-status'),
       barOpenStatus: document.getElementById('bar-open-status'),
-      firebaseStatus: document.getElementById('firebase-status'),
       reportMeta: document.getElementById('report-meta'),
       reportCocktails: document.getElementById('report-cocktails'),
       reportIngredients: document.getElementById('report-ingredients'),
@@ -1285,19 +1268,6 @@
 
     function clearList(el) {
       el.innerHTML = '';
-    }
-
-    function setFirebaseStatus(text, isError) {
-      if (!els.firebaseStatus) return;
-      els.firebaseStatus.textContent = text;
-      els.firebaseStatus.className = 'firebase-status ' + (isError ? 'error' : 'ok');
-    }
-
-    function showFirebaseError(action, err) {
-      const msg = action + ' failed: ' + (err && err.message ? err.message : err);
-      setFirebaseStatus('Firebase: ' + msg, true);
-      alert(msg);
-      console.error(msg, err);
     }
 
     function fillList(el, items) {
@@ -1352,12 +1322,15 @@
     }
 
     function updateBarStatusBanner() {
-      els.barStatusBanner.textContent = barOpen ? 'BAR OPEN' : 'BAR CLOSED';
-      els.barStatusBanner.className = 'status-banner ' + (barOpen ? 'status-open' : 'status-closed');
-      els.barOpenStatus.textContent = 'Status: ' + (barOpen ? 'OPEN' : 'CLOSED');
+      // Bar-open restriction removed: guests can always order.
+      barOpen = true;
+      els.barStatusBanner.textContent = 'ORDERS OPEN';
+      els.barStatusBanner.className = 'status-banner status-open';
+      els.barOpenStatus.textContent = 'Status: ORDERS ALWAYS OPEN';
       els.countingStatus.textContent = 'Counting: ' + (reportActive ? 'ACTIVE' : 'OFF');
-      els.btnBarOpen.classList.toggle('active', barOpen);
-      els.btnBarOpen.textContent = barOpen ? 'BAR CLOSED' : 'BAR OPEN';
+      els.btnBarOpen.classList.add('active');
+      els.btnBarOpen.textContent = 'ORDERS ALWAYS OPEN';
+      els.btnBarOpen.disabled = true;
       els.btnActivate.classList.toggle('active', reportActive);
       els.btnActivate.textContent = reportActive ? 'ACTIVE' : 'ACTIVATE';
       renderDrinkGrid();
@@ -1432,13 +1405,6 @@
         }
       }
 
-      if (!barOpen) {
-        label.textContent = 'BAR CLOSED';
-        btn.classList.add('locked');
-        btn.disabled = true;
-        return;
-      }
-
       label.textContent = 'ORDER';
       btn.classList.add('green');
       btn.disabled = false;
@@ -1490,7 +1456,6 @@
 
     function submitOrder() {
       if (sessionRole !== 'user') return;
-      if (!barOpen) return;
       if (myActiveOrder) return;
 
       const drink = getDrinkById(selectedDrinkId);
@@ -1506,31 +1471,21 @@
         preparingAt: null
       };
 
-      db.ref(appPath('orders/' + userId)).set(payload).catch(err => showFirebaseError('Send order', err));
+      db.ref(appPath('orders/' + userId)).set(payload);
     }
 
     function cancelMyOrder() {
       if (!myActiveOrder || myActiveOrder.status !== 'ordered') return;
-      db.ref(appPath('orders/' + userId)).remove().catch(err => showFirebaseError('Cancel order', err));
+      db.ref(appPath('orders/' + userId)).remove();
     }
 
     function setBarOpen(nextValue) {
-      const cleanValue = !!nextValue;
-      els.btnBarOpen.disabled = true;
-      setFirebaseStatus('Firebase: saving BAR ' + (cleanValue ? 'OPEN' : 'CLOSED') + '...', false);
-      db.ref(appPath('state')).update({
-        barOpen: cleanValue,
-        updatedAt: firebase.database.ServerValue.TIMESTAMP
-      }).then(() => {
-        setFirebaseStatus('Firebase: BAR ' + (cleanValue ? 'OPEN' : 'CLOSED') + ' saved', false);
-      }).catch(err => showFirebaseError('BAR OPEN/CLOSED', err)).finally(() => {
-        els.btnBarOpen.disabled = false;
-      });
+      db.ref(appPath('state/barOpen')).set(!!nextValue);
     }
 
     function resetAllOrders() {
       if (!confirm('Reset all orders?')) return;
-      db.ref(appPath('orders')).remove().catch(err => showFirebaseError('Reset orders', err));
+      db.ref(appPath('orders')).remove();
     }
 
     function safeKey(name) {
@@ -1544,9 +1499,8 @@
       if (reportActive) {
         if (!confirm('Counting is already active. Reset report totals and start again?')) return;
       }
-      db.ref(appPath('report')).set({ activatedAt: firebase.database.ServerValue.TIMESTAMP })
-        .then(() => db.ref(appPath('state/reportActive')).set(true))
-        .catch(err => showFirebaseError('Activate counting', err));
+      db.ref(appPath('report')).set({ activatedAt: firebase.database.ServerValue.TIMESTAMP });
+      db.ref(appPath('state/reportActive')).set(true);
     }
 
     function recordServed(order) {
@@ -1641,7 +1595,7 @@
 
     function markReady(clientId) {
       const order = ordersMap[clientId];
-      const finish = () => db.ref(appPath('orders/' + clientId)).remove().catch(err => showFirebaseError('Ready / clear order', err));
+      const finish = () => db.ref(appPath('orders/' + clientId)).remove();
 
       if (reportActive && order) {
         recordServed(order).then(finish).catch(err => {
@@ -1656,7 +1610,7 @@
       db.ref(appPath('orders/' + clientId)).update({
         status: 'preparing',
         preparingAt: firebase.database.ServerValue.TIMESTAMP
-      }).catch(err => showFirebaseError('Start preparation', err));
+      });
     }
 
     function getOrdersArray() {
@@ -1832,31 +1786,27 @@
       if (listenersAttached) return;
       listenersAttached = true;
 
-      db.ref('.info/connected').on('value', snap => {
-        if (snap.val() === true) setFirebaseStatus('Firebase: connected — ' + BUILD_VERSION, false);
-        else setFirebaseStatus('Firebase: disconnected / reconnecting — ' + BUILD_VERSION, true);
-      });
-
+      // Legacy Firebase barOpen value is ignored. Orders are always open.
       db.ref(appPath('state/barOpen')).on('value', snap => {
-        barOpen = !!snap.val();
+        barOpen = true;
         updateBarStatusBanner();
         updateUserOrderButton();
-      }, err => showFirebaseError('Read BAR status', err));
+      });
 
       db.ref(appPath('state/reportActive')).on('value', snap => {
         reportActive = !!snap.val();
         updateBarStatusBanner();
-      }, err => showFirebaseError('Read counting status', err));
+      });
 
       db.ref(appPath('report')).on('value', snap => {
         reportData = snap.val() || {};
-      }, err => showFirebaseError('Read report', err));
+      });
 
       db.ref(appPath('orders')).on('value', snap => {
         ordersMap = snap.val() || {};
         updateMyOrderFromMap();
         if (sessionRole === 'bartender') renderOrdersTable();
-      }, err => showFirebaseError('Read orders', err));
+      });
     }
 
     document.getElementById('btn-login').addEventListener('click', loginAction);
@@ -1873,7 +1823,8 @@
     els.userOrderBtn.addEventListener('click', submitOrder);
     els.cancelOrderBtn.addEventListener('click', cancelMyOrder);
 
-    document.getElementById('btn-bar-open').addEventListener('click', () => setBarOpen(!barOpen));
+    // Bar open restriction removed; button is disabled and kept only as a status label.
+    document.getElementById('btn-bar-open').addEventListener('click', () => updateBarStatusBanner());
     document.getElementById('btn-reset-all').addEventListener('click', resetAllOrders);
     document.getElementById('btn-activate').addEventListener('click', activateCounting);
     document.getElementById('btn-report').addEventListener('click', renderReportScreen);
@@ -1906,7 +1857,6 @@
       } else {
         auth.signInAnonymously().catch(err => {
           els.loginNote.textContent = 'Login failed: ' + err.message;
-          setFirebaseStatus('Firebase auth failed: ' + err.message, true);
         });
       }
     });
