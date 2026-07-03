@@ -726,18 +726,18 @@
       background: rgba(255,255,255,0.08);
       color: #ffffff;
       text-align: left;
-      padding: 14px 12px;
-      font-size: 15px;
+      padding: 10px 7px;
+      font-size: 12px;
       font-weight: 900;
       border-bottom: 1px solid rgba(255,255,255,0.08);
       white-space: nowrap;
     }
 
     tbody td {
-      padding: 14px 12px;
+      padding: 10px 7px;
       border-bottom: 1px solid rgba(255,255,255,0.08);
       color: #ffffff;
-      font-size: 15px;
+      font-size: 13px;
       vertical-align: middle;
     }
 
@@ -789,17 +789,19 @@
     .ready-btn {
       background: linear-gradient(135deg, var(--red), var(--red-dark));
       color: #ffffff;
-      padding: 10px 14px;
-      font-size: 15px;
-      min-width: 88px;
+      padding: 8px 9px;
+      font-size: 12px;
+      min-width: 56px;
+      border-radius: 10px;
     }
 
     .prep-btn {
       background: linear-gradient(135deg, var(--prep-blue), var(--prep-blue-dark));
       color: #ffffff;
-      padding: 10px 14px;
-      font-size: 18px;
-      min-width: 58px;
+      padding: 8px 9px;
+      font-size: 16px;
+      min-width: 38px;
+      border-radius: 10px;
       line-height: 1;
     }
 
@@ -862,15 +864,108 @@
       transform: scale(0.96);
     }
 
+
+
+    .kentucky-note-box {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .kentucky-note-text {
+      flex: 1;
+    }
+
+    .kentucky-btn {
+      border: none;
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: 14px;
+      font-weight: 1000;
+      color: #ffffff;
+      background: linear-gradient(135deg, #8a5a2b, #4e2d11);
+      box-shadow: 0 5px 14px rgba(0,0,0,0.28);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .kentucky-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.58);
+      padding: 20px;
+    }
+
+    .modal-card {
+      width: min(360px, 92vw);
+      background: #ffffff;
+      color: #0a1a2f;
+      border-radius: 18px;
+      box-shadow: 0 18px 48px rgba(0,0,0,0.42);
+      padding: 22px;
+      text-align: center;
+    }
+
+    .modal-title {
+      font-size: 26px;
+      font-weight: 1000;
+      margin-bottom: 10px;
+    }
+
+    .modal-text {
+      font-size: 15px;
+      font-weight: 750;
+      color: #4b5563;
+      line-height: 1.35;
+      margin-bottom: 18px;
+    }
+
+    .modal-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .modal-btn {
+      min-height: 48px;
+      font-size: 18px;
+      font-weight: 1000;
+      color: #ffffff;
+    }
+
+    .modal-no { background: linear-gradient(135deg, #667085, #344054); }
+    .modal-yes { background: linear-gradient(135deg, var(--red), var(--red-dark)); }
+
+    .compact-status {
+      display: block;
+      margin-top: 3px;
+      font-size: 10px;
+      line-height: 1;
+      letter-spacing: 0.2px;
+      font-weight: 1000;
+      color: #ffe082;
+      text-transform: uppercase;
+    }
+
     @media (max-width: 720px) {
       .screen { padding: 14px; }
       .tile-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
       .tile { min-height: 116px; font-size: 20px; }
       .drink-title, .dash-title { font-size: 27px; }
       .app-title { font-size: 24px; }
-      thead th, tbody td { padding: 12px 8px; font-size: 14px; }
-      .ready-btn { min-width: 76px; font-size: 14px; padding: 9px 12px; }
-      .prep-btn { min-width: 52px; padding: 9px 12px; }
+      thead th, tbody td { padding: 8px 5px; font-size: 11px; }
+      .ready-btn { min-width: 50px; font-size: 11px; padding: 8px 6px; }
+      .prep-btn { min-width: 34px; padding: 8px 6px; }
       .recipe-shortcuts { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
       .recipe-shortcut-btn { min-height: 42px; font-size: 15px; }
       .guest-buttons { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
@@ -886,8 +981,15 @@
       .topbar-left { flex: 1; }
       .welcome { font-size: 20px; }
       .tile-grid { grid-template-columns: 1fr 1fr; }
-      .table-wrap { overflow-x: auto; }
-      table { min-width: 690px; }
+      .table-wrap { overflow-x: hidden; }
+      table { min-width: 0; table-layout: fixed; }
+      th:nth-child(1), td:nth-child(1) { width: 21%; }
+      th:nth-child(2), td:nth-child(2) { width: 34%; }
+      th:nth-child(3), td:nth-child(3) { width: 17%; }
+      th:nth-child(4), td:nth-child(4) { width: 11%; text-align: center; }
+      th:nth-child(5), td:nth-child(5) { width: 17%; text-align: center; }
+      .drink-link { font-size: 12px; line-height: 1.12; }
+      .compact-status { font-size: 9px; }
     }
   </style>
 </head>
@@ -896,7 +998,6 @@
     <div class="login-wrap">
       <div class="login-card card">
         <h1 class="app-title">VIP Cocktail Night<br>July 17, 2026</h1>
-        <div class="login-subtitle">Choose your name</div>
         <div id="guest-login-buttons" class="guest-buttons"></div>
         <div class="barman-divider">
           <input id="login-input" class="input barman-input" type="password" placeholder="" autocomplete="off" inputmode="numeric" aria-label="Private access" />
@@ -987,12 +1088,11 @@
       <table>
         <thead>
           <tr>
-            <th>Guest</th>
-            <th id="th-drink" class="sortable">Order <span id="sort-drink-mark" class="sort-mark">↕</span></th>
-            <th id="th-time" class="sortable">Waiting <span id="sort-time-mark" class="sort-mark">↕</span></th>
-            <th>Status</th>
-            <th>Ready</th>
-            <th>Prep</th>
+            <th>Name</th>
+            <th id="th-drink" class="sortable">Drink <span id="sort-drink-mark" class="sort-mark">↕</span></th>
+            <th id="th-time" class="sortable">Time <span id="sort-time-mark" class="sort-mark">↕</span></th>
+            <th>▶</th>
+            <th>READY</th>
           </tr>
         </thead>
         <tbody id="orders-tbody"></tbody>
@@ -1053,6 +1153,16 @@
     </div>
   </div>
 
+  <div id="reset-confirm-modal" class="modal-backdrop" style="display:none" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <div class="modal-title">RESET ALL?</div>
+      <div class="modal-text">This will clear orders, report totals and guest logins.</div>
+      <div class="modal-actions">
+        <button id="reset-confirm-no" class="btn modal-btn modal-no">NO</button>
+        <button id="reset-confirm-yes" class="btn modal-btn modal-yes">YES</button>
+      </div>
+    </div>
+  </div>
 
   <script>
     var firebaseConfig = {
@@ -1071,6 +1181,7 @@
 
     const APP_ID = 'bartender-app-v5';
     // v13: Bartender order table listener fixed. Bar-open green banners/pill fully removed. Guests can order immediately.
+    // v16: served-drinks report log, compact barman table, Kentucky option, 18 guest login.
     const APP_ROOT = 'apps/' + APP_ID;
     const appPath = (path='') => path ? (APP_ROOT + '/' + path) : APP_ROOT;
 
@@ -1081,17 +1192,17 @@
         abbr: 'Biz',
         color: 'linear-gradient(135deg,#00c6ff,#0072ff)',
         glass: ['Wine glass'],
-        userIngredients: ['Whisky', 'Mezcal', 'Fresh lemon juice', 'Celery syrup', 'Red Tabasco sauce', 'Ginger beer'],
+        userIngredients: ['Whisky', 'Mezcal', 'Fresh lemon juice', 'Celery syrup', 'Tabasco', 'Ginger beer'],
         usage: [
           { name: 'Whisky', oz: 1 },
           { name: 'Mezcal', oz: 1 },
           { name: 'Fresh lemon juice', oz: 1 },
           { name: 'Celery syrup', oz: 1 },
-          { name: 'Red Tabasco sauce', oz: 0.16 },
+          { name: 'Tabasco', oz: 0.16 },
           { name: 'Ginger beer', oz: 5 }
         ],
         recipe: {
-          ingredients: ['1 oz whisky', '1 oz mezcal', '1 oz fresh lemon juice', '1 oz celery syrup', '5 dashes red Tabasco sauce', '5 oz ginger beer'],
+          ingredients: ['1 oz whisky', '1 oz mezcal', '1 oz fresh lemon juice', '1 oz celery syrup', '5 dashes Tabasco', '5 oz ginger beer'],
           method: ['Shake whisky, mezcal, lemon juice, celery syrup, and Tabasco with ice.', 'Strain into a wine glass over ice.', 'Top with ginger beer.'],
           garnish: ['Celery stalk', 'Dried orange wheel', 'Chili pepper']
         }
@@ -1140,14 +1251,14 @@
         abbr: 'PM',
         color: 'linear-gradient(135deg,#ec407a,#c2185b)',
         glass: ['Martini glass'],
-        userIngredients: ['Vanilla vodka', 'Passion fruit liqueur', 'Passion fruit purée', 'Vanilla sugar'],
+        userIngredients: ['Vanilla vodka', 'Passoa', 'Passion fruit purée'],
         usage: [
           { name: 'Vanilla vodka', oz: 1.5 },
-          { name: 'Passion fruit liqueur', oz: 0.75 },
+          { name: 'Passoa', oz: 0.75 },
           { name: 'Passion fruit purée', oz: 1.5 }
         ],
         recipe: {
-          ingredients: ['1 1/2 oz vanilla vodka', '3/4 oz passion fruit liqueur', '1 1/2 oz passion fruit purée', '2 bar spoons vanilla sugar'],
+          ingredients: ['1 1/2 oz vanilla vodka', '3/4 oz Passoa', '1 1/2 oz passion fruit purée'],
           method: ['Shake all ingredients with ice.', 'Double strain into a martini glass.'],
           garnish: ['Passion fruit half']
         }
@@ -1215,15 +1326,15 @@
         abbr: 'CO',
         color: 'linear-gradient(135deg,#8d6e63,#5d4037)',
         glass: ['Martini glass'],
-        userIngredients: ['Vodka', 'Cointreau', 'Fresh lime juice', 'Cranberry juice'],
+        userIngredients: ['Vodka', 'Cointreau', 'Fresh lemon juice', 'Cranberry juice'],
         usage: [
           { name: 'Vodka', oz: 1.5 },
           { name: 'Cointreau', oz: 0.5 },
-          { name: 'Fresh lime juice', oz: 0.5 },
+          { name: 'Fresh lemon juice', oz: 0.5 },
           { name: 'Cranberry juice', oz: 1 }
         ],
         recipe: {
-          ingredients: ['1 1/2 oz vodka', '1/2 oz Cointreau', '1/2 oz fresh lime juice', '1 oz cranberry juice'],
+          ingredients: ['1 1/2 oz vodka', '1/2 oz Cointreau', '1/2 oz fresh lemon juice', '1 oz cranberry juice'],
           method: ['Shake all ingredients with ice.', 'Strain into a martini glass.'],
           garnish: ['Lemon twist']
         }
@@ -1235,16 +1346,36 @@
         color: 'linear-gradient(135deg,#b87333,#6d3b12)',
         glass: ['Copper mug'],
         note: 'Kentucky version available, with Bourbon in place of vodka.',
-        userIngredients: ['Vodka', 'Ginger beer', 'Fresh lime juice'],
+        userIngredients: ['Vodka', 'Ginger beer', 'Fresh lemon juice'],
         usage: [
           { name: 'Vodka', oz: 1.5 },
           { name: 'Ginger beer', oz: 4 },
-          { name: 'Fresh lime juice', oz: 0.33 }
+          { name: 'Fresh lemon juice', oz: 0.33 }
         ],
         recipe: {
-          ingredients: ['1 1/2 oz vodka', '4 oz ginger beer', '1/3 oz fresh lime juice'],
-          method: ['Build vodka and ginger beer in a copper mug over ice.', 'Add fresh lime juice.', 'Gently stir to combine.'],
-          garnish: ['Lime slice']
+          ingredients: ['1 1/2 oz vodka', '4 oz ginger beer', '1/3 oz fresh lemon juice'],
+          method: ['Build vodka and ginger beer in a copper mug over ice.', 'Add fresh lemon juice.', 'Gently stir to combine.'],
+          garnish: ['Lemon slice']
+        }
+      },
+      {
+        id: 'kentucky',
+        name: 'Kentucky',
+        abbr: 'KY',
+        hidden: true,
+        color: 'linear-gradient(135deg,#7a4b21,#3f230e)',
+        glass: ['Copper mug'],
+        note: 'Kentucky version: Bourbon in place of vodka.',
+        userIngredients: ['Bourbon', 'Ginger beer', 'Fresh lemon juice'],
+        usage: [
+          { name: 'Bourbon', oz: 1.5 },
+          { name: 'Ginger beer', oz: 4 },
+          { name: 'Fresh lemon juice', oz: 0.33 }
+        ],
+        recipe: {
+          ingredients: ['1 1/2 oz bourbon', '4 oz ginger beer', '1/3 oz fresh lemon juice'],
+          method: ['Build bourbon and ginger beer in a copper mug over ice.', 'Add fresh lemon juice.', 'Gently stir to combine.'],
+          garnish: ['Lemon slice']
         }
       },
       {
@@ -1288,17 +1419,19 @@
       { id: 'guest03_assaf', name: 'Assaf' },
       { id: 'guest04_ayelet', name: 'Ayelet' },
       { id: 'guest05_dan', name: 'Dan' },
-      { id: 'guest06_erez', name: 'Erez' },
-      { id: 'guest07_franck', name: 'Franck' },
-      { id: 'guest08_galit', name: 'Galit' },
-      { id: 'guest09_hagit', name: 'Hagit' },
-      { id: 'guest10_maya', name: 'Maya' },
-      { id: 'guest11_miki', name: 'Miki' },
-      { id: 'guest12_nivi', name: 'Nivi' },
-      { id: 'guest13_nurit', name: 'Nurit' },
-      { id: 'guest14_rani', name: 'Rani' },
-      { id: 'guest15_sagit', name: 'Sagit' },
-      { id: 'guest16_shaked', name: 'Shaked' }
+      { id: 'guest06_eran', name: 'Eran' },
+      { id: 'guest07_erez', name: 'Erez' },
+      { id: 'guest08_franck', name: 'Franck' },
+      { id: 'guest09_galit', name: 'Galit' },
+      { id: 'guest10_hagit', name: 'Hagit' },
+      { id: 'guest11_maya', name: 'Maya' },
+      { id: 'guest12_miki', name: 'Miki' },
+      { id: 'guest13_nivi', name: 'Nivi' },
+      { id: 'guest14_nurit', name: 'Nurit' },
+      { id: 'guest15_rani', name: 'Rani' },
+      { id: 'guest16_sagit', name: 'Sagit' },
+      { id: 'guest17_shaked', name: 'Shaked' },
+      { id: 'guest18_yifat', name: 'Yifat' }
     ];
 
     let authReady = false;
@@ -1310,14 +1443,15 @@
     let barOpen = true;
     let reportActive = false;
     let reportData = {};
+    let servedOrdersMap = {};
     let loggedGuestsMap = {};
     let hadGuestPresence = false;
     let myActiveOrder = null;
     let firebaseOrdersMap = {};
     let localOrdersMap = {};
     let ordersMap = {};
-    const LOCAL_ORDERS_STORAGE = 'vipCocktailNightLocalOrders_v15';
-    const LOCAL_BUS_NAME = 'vipCocktailNightOrders_v15';
+    const LOCAL_ORDERS_STORAGE = 'vipCocktailNightLocalOrders_v16';
+    const LOCAL_BUS_NAME = 'vipCocktailNightOrders_v16';
     let localBus = null;
     let sortState = { key: 'time', dir: 'asc' };
     let runningClockInterval = null;
@@ -1389,6 +1523,15 @@
       return drinks.find(d => d.id === id) || null;
     }
 
+    function getVisibleDrinks() {
+      return drinks.filter(d => !d.hidden);
+    }
+
+    function activeOrderBelongsToDrink(drinkId) {
+      if (!myActiveOrder) return false;
+      return myActiveOrder.drinkId === drinkId || (drinkId === 'moscow-mule' && myActiveOrder.drinkId === 'kentucky');
+    }
+
     function clearList(el) {
       el.innerHTML = '';
     }
@@ -1406,7 +1549,7 @@
       if (!els.recipeShortcuts) return;
 
       els.recipeShortcuts.innerHTML = '';
-      drinks.forEach(drink => {
+      getVisibleDrinks().forEach(drink => {
         const btn = document.createElement('button');
         btn.className = 'recipe-shortcut-btn';
         btn.style.background = drink.color;
@@ -1475,7 +1618,7 @@
 
     function renderDrinkGrid() {
       els.drinkGrid.innerHTML = '';
-      drinks.forEach(drink => {
+      getVisibleDrinks().forEach(drink => {
         const btn = document.createElement('button');
         btn.className = 'tile';
         btn.style.background = drink.color;
@@ -1484,7 +1627,7 @@
         nameWrap.className = 'tile-name';
         nameWrap.appendChild(document.createTextNode(drink.name));
 
-        if (myActiveOrder && myActiveOrder.drinkId === drink.id && myActiveOrder.status === 'preparing') {
+        if (myActiveOrder && activeOrderBelongsToDrink(drink.id) && myActiveOrder.status === 'preparing') {
           const lamp = document.createElement('span');
           lamp.className = 'red-lamp';
           nameWrap.appendChild(lamp);
@@ -1680,7 +1823,7 @@
           btn.classList.add('sent');
           btn.disabled = true;
 
-          if (myActiveOrder.drinkId === drink.id) {
+          if (activeOrderBelongsToDrink(drink.id)) {
             els.cancelOrderBtn.style.display = 'flex';
             els.cancelOrderBtn.disabled = false;
           }
@@ -1700,12 +1843,29 @@
       selectedDrinkId = drinkId;
       els.userDrinkTitle.textContent = drink.name;
       fillList(els.userIngredientList, drink.userIngredients);
+      els.userNote.innerHTML = '';
       if (drink.note) {
         els.userNote.style.display = 'block';
-        els.userNote.textContent = drink.note;
+        if (drink.id === 'moscow-mule') {
+          const box = document.createElement('div');
+          box.className = 'kentucky-note-box';
+          const text = document.createElement('span');
+          text.className = 'kentucky-note-text';
+          text.textContent = drink.note;
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'kentucky-btn';
+          btn.textContent = 'Go Kentucky';
+          btn.disabled = !!myActiveOrder;
+          btn.addEventListener('click', () => submitOrder('kentucky'));
+          box.appendChild(text);
+          box.appendChild(btn);
+          els.userNote.appendChild(box);
+        } else {
+          els.userNote.textContent = drink.note;
+        }
       } else {
         els.userNote.style.display = 'none';
-        els.userNote.textContent = '';
       }
       updateUserOrderButton();
       showScreen('screen-user-drink');
@@ -1738,7 +1898,7 @@
       renderDrinkGrid();
     }
 
-    function submitOrder() {
+    function submitOrder(overrideDrinkId) {
       if (sessionRole !== 'user') {
         alert('Please login as a guest before ordering.');
         return;
@@ -1750,7 +1910,7 @@
       }
       if (myActiveOrder) return;
 
-      const drink = getDrinkById(selectedDrinkId);
+      const drink = getDrinkById(overrideDrinkId || selectedDrinkId);
       if (!drink) {
         alert('Please choose a cocktail again.');
         return;
@@ -1797,11 +1957,22 @@
       db.ref(appPath('state/barOpen')).set(!!nextValue);
     }
 
+    function showResetConfirm() {
+      const modal = document.getElementById('reset-confirm-modal');
+      if (modal) modal.style.display = 'flex';
+    }
+
+    function hideResetConfirm() {
+      const modal = document.getElementById('reset-confirm-modal');
+      if (modal) modal.style.display = 'none';
+    }
+
     function resetAllOrders() {
-      if (!confirm('Reset all orders, logged-in guests, and report totals?')) return;
+      hideResetConfirm();
       clearLocalOrders();
       reportActive = false;
       reportData = {};
+      servedOrdersMap = {};
       updateBarStatusBanner();
       Promise.all([
         db.ref(appPath('orders')).remove(),
@@ -1827,7 +1998,7 @@
       }
       reportActive = true;
       updateBarStatusBanner();
-      db.ref(appPath('report')).set({ activatedAt: firebase.database.ServerValue.TIMESTAMP }).catch(err => {
+      db.ref(appPath('report')).update({ activatedAt: firebase.database.ServerValue.TIMESTAMP }).catch(err => {
         alert('Report activation failed. Firebase error: ' + (err && err.message ? err.message : err));
       });
       db.ref(appPath('state/reportActive')).set(true).catch(err => {
@@ -1839,7 +2010,10 @@
       const drink = getDrinkById(order && order.drinkId);
       if (!drink || !order) return Promise.resolve();
 
+      const servedKey = db.ref(appPath('report/servedOrders')).push().key;
+      const localServedAt = Date.now();
       const servedPayload = {
+        servedId: servedKey,
         clientId: order.clientId || '',
         guestId: order.guestId || order.clientId || '',
         userName: order.userName || 'Guest',
@@ -1850,9 +2024,14 @@
         servedAt: firebase.database.ServerValue.TIMESTAMP
       };
 
-      // Store the served drink as history. The report screen calculates cocktail counts
-      // and ingredient quantities directly from this served list and the recipe data.
-      return db.ref(appPath('report/servedOrders')).push(servedPayload);
+      // Local mirror gives immediate report feedback on the barman phone.
+      servedOrdersMap[servedKey] = Object.assign({}, servedPayload, { servedAt: localServedAt });
+      if (!reportData) reportData = {};
+      if (!reportData.servedOrders) reportData.servedOrders = {};
+      reportData.servedOrders[servedKey] = servedOrdersMap[servedKey];
+
+      // Firebase history is the report database. The report calculates totals from this list + recipes.
+      return db.ref(appPath('report/servedOrders/' + servedKey)).set(servedPayload);
     }
 
     function formatOz(value) {
@@ -1897,7 +2076,7 @@
     }
 
     function buildReportRowsFromServedOrders() {
-      const servedOrders = (reportData && reportData.servedOrders) || {};
+      const servedOrders = Object.assign({}, (reportData && reportData.servedOrders) || {}, servedOrdersMap || {});
       const cocktailTotals = {};
       const ingredientTotals = {};
       let servedCount = 0;
@@ -1945,7 +2124,7 @@
       return { cocktailRows, ingredientRows };
     }
 
-    function renderReportScreen() {
+    function paintReportScreen() {
       const activatedAt = reportData && reportData.activatedAt;
       els.reportMeta.textContent = activatedAt
         ? 'Counting activated: ' + new Date(activatedAt).toLocaleString()
@@ -1958,8 +2137,22 @@
 
       els.reportIngredients.innerHTML = '';
       els.reportIngredients.appendChild(makeReportTable(['Ingredient', 'Consumed'], rows.ingredientRows));
+    }
 
+    function renderReportScreen() {
+      els.reportMeta.textContent = 'Loading report...';
+      els.reportCocktails.innerHTML = '';
+      els.reportIngredients.innerHTML = '';
       showScreen('screen-report');
+
+      db.ref(appPath('report')).once('value').then(snap => {
+        reportData = snap.val() || {};
+        servedOrdersMap = Object.assign({}, (reportData && reportData.servedOrders) || {}, servedOrdersMap || {});
+        paintReportScreen();
+      }).catch(err => {
+        paintReportScreen();
+        alert('Report refresh failed. Showing local report data. Firebase error: ' + (err && err.message ? err.message : err));
+      });
     }
 
     function markReady(clientId) {
@@ -2023,6 +2216,18 @@
       els.sortTimeMark.textContent = sortState.key === 'time' ? (sortState.dir === 'asc' ? '↑' : '↓') : '↕';
     }
 
+    function compactDrinkName(name) {
+      const map = {
+        'Dr. Bizzaro': 'Bizzaro',
+        'Pornstar Martini': 'Pornstar',
+        'Sex on the Beach': 'Beach',
+        'New York Sour': 'NY Sour',
+        'Moscow Mule': 'Mule',
+        'Habibi Ya-Eini': 'Habibi'
+      };
+      return map[name] || name || 'Drink';
+    }
+
     function renderOrdersTable() {
       const rows = getSortedOrders();
       els.ordersTbody.innerHTML = '';
@@ -2037,26 +2242,18 @@
         const tdDrink = document.createElement('td');
         const drinkLink = document.createElement('span');
         drinkLink.className = 'drink-link';
-        drinkLink.textContent = order.drinkName || 'Drink';
+        drinkLink.textContent = compactDrinkName(order.drinkName);
         drinkLink.addEventListener('click', () => openBartenderRecipeScreen(order.drinkId));
         tdDrink.appendChild(drinkLink);
 
         const tdTime = document.createElement('td');
         tdTime.textContent = formatElapsed(Date.now() - (order.createdAt || Date.now()));
 
-        const tdStatus = document.createElement('td');
-        const pill = document.createElement('span');
         const preparing = order.status === 'preparing';
-        pill.className = 'status-pill ' + (preparing ? 'status-preparing' : 'status-waiting');
-        pill.textContent = preparing ? 'PREPARING' : 'WAITING';
-        tdStatus.appendChild(pill);
-
-        const tdReady = document.createElement('td');
-        const btnReady = document.createElement('button');
-        btnReady.className = 'btn ready-btn';
-        btnReady.textContent = 'READY';
-        btnReady.addEventListener('click', () => markReady(order.clientId));
-        tdReady.appendChild(btnReady);
+        const statusSmall = document.createElement('span');
+        statusSmall.className = 'compact-status';
+        statusSmall.textContent = preparing ? 'PREP' : 'WAIT';
+        tdDrink.appendChild(statusSmall);
 
         const tdPrep = document.createElement('td');
         const btnPrep = document.createElement('button');
@@ -2069,12 +2266,18 @@
         }
         tdPrep.appendChild(btnPrep);
 
+        const tdReady = document.createElement('td');
+        const btnReady = document.createElement('button');
+        btnReady.className = 'btn ready-btn';
+        btnReady.textContent = 'READY';
+        btnReady.addEventListener('click', () => markReady(order.clientId));
+        tdReady.appendChild(btnReady);
+
         tr.appendChild(tdUser);
         tr.appendChild(tdDrink);
         tr.appendChild(tdTime);
-        tr.appendChild(tdStatus);
-        tr.appendChild(tdReady);
         tr.appendChild(tdPrep);
+        tr.appendChild(tdReady);
         els.ordersTbody.appendChild(tr);
       });
     }
@@ -2186,6 +2389,7 @@
 
       db.ref(appPath('report')).on('value', snap => {
         reportData = snap.val() || {};
+        servedOrdersMap = Object.assign({}, (reportData && reportData.servedOrders) || {}, servedOrdersMap || {});
       });
 
       db.ref(appPath('state/loggedGuests')).on('value', snap => {
@@ -2279,7 +2483,10 @@
     // Bar open restriction removed. No bar-open button exists in v13.
     const removedBarOpenBtn = document.getElementById('btn-bar-open');
     if (removedBarOpenBtn) removedBarOpenBtn.addEventListener('click', () => updateBarStatusBanner());
-    document.getElementById('btn-reset-all').addEventListener('click', resetAllOrders);
+    document.getElementById('btn-reset-all').addEventListener('click', showResetConfirm);
+    document.getElementById('reset-confirm-yes').addEventListener('click', resetAllOrders);
+    document.getElementById('reset-confirm-no').addEventListener('click', hideResetConfirm);
+    document.getElementById('reset-confirm-modal').addEventListener('click', e => { if (e.target && e.target.id === 'reset-confirm-modal') hideResetConfirm(); });
     document.getElementById('btn-activate').addEventListener('click', activateCounting);
     document.getElementById('btn-report').addEventListener('click', renderReportScreen);
     document.getElementById('btn-back-report').addEventListener('click', () => showScreen('screen-bartender'));
