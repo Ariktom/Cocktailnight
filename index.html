@@ -174,6 +174,24 @@
       text-shadow: 0 1px 3px rgba(0,0,0,0.55);
     }
 
+
+
+    /* v13: bar-open restriction/status UI fully removed. */
+    #bar-status-banner,
+    #bar-open-status,
+    #btn-bar-open {
+      display: none !important;
+      width: 0 !important;
+      height: 0 !important;
+      min-width: 0 !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      border: 0 !important;
+      overflow: hidden !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+
     .active-order-banner {
       margin-bottom: 16px;
       padding: 12px 14px;
@@ -899,7 +917,7 @@
       </button>
       <div class="collapse-body">
         <div class="control-row">
-          <button id="btn-bar-open" class="btn bar-open-btn active" style="display:none" disabled></button>
+          <!-- BAR OPEN control removed in v13: orders are always allowed. -->
           <button id="btn-reset-all" class="btn reset-all-btn">RESET ALL</button>
           <button id="btn-activate" class="btn activate-btn">ACTIVATE</button>
           <button id="btn-report" class="btn report-btn">REPORT</button>
@@ -1001,7 +1019,7 @@
     var db = firebase.database();
 
     const APP_ID = 'bartender-app-v5';
-    // v12: Basic order flow fixed. Bar-open labels hidden; guests can order immediately; cancel button beside order button.
+    // v13: Bartender order table listener fixed. Bar-open green banners/pill fully removed. Guests can order immediately.
     const APP_ROOT = 'apps/' + APP_ID;
     const appPath = (path='') => path ? (APP_ROOT + '/' + path) : APP_ROOT;
 
@@ -1214,8 +1232,8 @@
     let firebaseOrdersMap = {};
     let localOrdersMap = {};
     let ordersMap = {};
-    const LOCAL_ORDERS_STORAGE = 'vipCocktailNightLocalOrders_v12';
-    const LOCAL_BUS_NAME = 'vipCocktailNightOrders_v12';
+    const LOCAL_ORDERS_STORAGE = 'vipCocktailNightLocalOrders_v13';
+    const LOCAL_BUS_NAME = 'vipCocktailNightOrders_v13';
     let localBus = null;
     let sortState = { key: 'time', dir: 'asc' };
     let runningClockInterval = null;
@@ -1339,22 +1357,23 @@
 
     function updateBarStatusBanner() {
       // Bar-open restriction removed: guests can always order.
-      // The old status labels are deliberately hidden because they are unnecessary.
+      // All old bar-open visual banners/buttons are hard-hidden.
       barOpen = true;
       if (els.barStatusBanner) {
         els.barStatusBanner.textContent = '';
         els.barStatusBanner.style.display = 'none';
-        els.barStatusBanner.className = 'status-banner status-open';
+        els.barStatusBanner.hidden = true;
       }
       if (els.barOpenStatus) {
         els.barOpenStatus.textContent = '';
         els.barOpenStatus.style.display = 'none';
+        els.barOpenStatus.hidden = true;
       }
       if (els.btnBarOpen) {
         els.btnBarOpen.textContent = '';
         els.btnBarOpen.style.display = 'none';
+        els.btnBarOpen.hidden = true;
         els.btnBarOpen.disabled = true;
-        els.btnBarOpen.classList.add('active');
       }
       els.countingStatus.textContent = 'Counting: ' + (reportActive ? 'ACTIVE' : 'OFF');
       els.btnActivate.classList.toggle('active', reportActive);
@@ -1396,15 +1415,53 @@
       } catch (e) {}
     }
 
+    function normalizeOrder(raw, fallbackClientId) {
+      if (!raw || typeof raw !== 'object') return null;
+      const status = raw.status || 'ordered';
+      if (status !== 'ordered' && status !== 'preparing') return null;
+
+      const clientId = raw.clientId || fallbackClientId;
+      if (!clientId) return null;
+
+      let createdAt = raw.createdAt;
+      if (typeof createdAt !== 'number') createdAt = Date.now();
+
+      return {
+        clientId: clientId,
+        userName: raw.userName || raw.guestName || raw.name || 'Guest',
+        drinkId: raw.drinkId || raw.cocktailId || '',
+        drinkName: raw.drinkName || raw.cocktailName || raw.order || 'Drink',
+        status: status,
+        createdAt: createdAt,
+        preparingAt: raw.preparingAt || null
+      };
+    }
+
+    function normalizeOrdersMap(rawMap) {
+      const out = {};
+      Object.keys(rawMap || {}).forEach(key => {
+        const order = normalizeOrder(rawMap[key], key);
+        if (order) out[order.clientId] = order;
+      });
+      return out;
+    }
+
+    function setFirebaseOrders(rawMap) {
+      firebaseOrdersMap = normalizeOrdersMap(rawMap || {});
+      rebuildOrdersMap();
+    }
+
     function rebuildOrdersMap() {
-      ordersMap = Object.assign({}, localOrdersMap || {}, firebaseOrdersMap || {});
+      const merged = Object.assign({}, normalizeOrdersMap(localOrdersMap || {}), normalizeOrdersMap(firebaseOrdersMap || {}));
+      ordersMap = merged;
       updateMyOrderFromMap();
       if (sessionRole === 'bartender') renderOrdersTable();
     }
 
     function putLocalOrder(order, shouldPublish = true) {
-      if (!order || !order.clientId) return;
-      localOrdersMap[order.clientId] = order;
+      const normalized = normalizeOrder(order, order && order.clientId);
+      if (!normalized || !normalized.clientId) return;
+      localOrdersMap[normalized.clientId] = normalized;
       if (shouldPublish) publishLocalOrders();
       rebuildOrdersMap();
     }
@@ -1737,7 +1794,9 @@
     }
 
     function getOrdersArray() {
-      return Object.values(ordersMap || {}).filter(Boolean);
+      return Object.keys(ordersMap || {})
+        .map(key => normalizeOrder(ordersMap[key], key))
+        .filter(Boolean);
     }
 
     function getSortedOrders() {
@@ -1925,11 +1984,34 @@
         reportData = snap.val() || {};
       });
 
-      db.ref(appPath('orders')).on('value', snap => {
-        firebaseOrdersMap = snap.val() || {};
-        rebuildOrdersMap();
+      const ordersRef = db.ref(appPath('orders'));
+
+      // Primary live listener: any saved Firebase order must appear in the bartender table.
+      ordersRef.on('value', snap => {
+        setFirebaseOrders(snap.val() || {});
       }, err => {
         alert('Online orders listener failed. Firebase error: ' + (err && err.message ? err.message : err));
+      });
+
+      // Backup child listeners for fast UI update in case the value listener is delayed.
+      ordersRef.on('child_added', snap => {
+        const order = normalizeOrder(snap.val(), snap.key);
+        if (order) {
+          firebaseOrdersMap[order.clientId] = order;
+          rebuildOrdersMap();
+        }
+      });
+
+      ordersRef.on('child_changed', snap => {
+        const order = normalizeOrder(snap.val(), snap.key);
+        if (order) firebaseOrdersMap[order.clientId] = order;
+        else delete firebaseOrdersMap[snap.key];
+        rebuildOrdersMap();
+      });
+
+      ordersRef.on('child_removed', snap => {
+        delete firebaseOrdersMap[snap.key];
+        rebuildOrdersMap();
       });
     }
 
@@ -1947,8 +2029,9 @@
     els.userOrderBtn.addEventListener('click', submitOrder);
     els.cancelOrderBtn.addEventListener('click', cancelMyOrder);
 
-    // Bar open restriction removed.
-    document.getElementById('btn-bar-open').addEventListener('click', () => updateBarStatusBanner());
+    // Bar open restriction removed. No bar-open button exists in v13.
+    const removedBarOpenBtn = document.getElementById('btn-bar-open');
+    if (removedBarOpenBtn) removedBarOpenBtn.addEventListener('click', () => updateBarStatusBanner());
     document.getElementById('btn-reset-all').addEventListener('click', resetAllOrders);
     document.getElementById('btn-activate').addEventListener('click', activateCounting);
     document.getElementById('btn-report').addEventListener('click', renderReportScreen);
