@@ -381,10 +381,13 @@
     .bottom-order-wrap {
       margin-top: auto;
       padding-top: 20px;
+      display: flex;
+      gap: 10px;
+      align-items: stretch;
     }
 
     .order-btn {
-      width: 100%;
+      width: 80%;
       min-height: 64px;
       border-radius: 16px;
       border: none;
@@ -417,19 +420,27 @@
     }
 
     .cancel-order-btn {
-      width: 100%;
-      min-height: 52px;
-      border-radius: 14px;
+      width: 20%;
+      min-height: 64px;
+      border-radius: 16px;
       border: none;
       color: #ffffff;
-      font-size: 18px;
+      font-size: 13px;
       font-weight: 900;
-      padding: 12px 16px;
+      padding: 8px 6px;
       cursor: pointer;
-      margin-top: 10px;
       background: linear-gradient(135deg, var(--red), var(--red-dark));
       box-shadow: var(--shadow);
-      display: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      line-height: 1.05;
+    }
+
+    .cancel-order-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
     }
 
     .red-lamp {
@@ -865,7 +876,7 @@
         <button id="user-order-btn" class="order-btn green">
           <span id="user-order-text">ORDER</span>
         </button>
-        <button id="cancel-order-btn" class="cancel-order-btn">CANCEL ORDER</button>
+        <button id="cancel-order-btn" class="cancel-order-btn" disabled>CANCEL</button>
       </div>
     </div>
   </div>
@@ -990,7 +1001,7 @@
     var db = firebase.database();
 
     const APP_ID = 'bartender-app-v5';
-    // v10: Bar-open restriction removed; guests can always place orders.
+    // v11: Bar-open labels removed; guests can always place orders; cancel button beside order button.
     const APP_ROOT = 'apps/' + APP_ID;
     const appPath = (path='') => path ? (APP_ROOT + '/' + path) : APP_ROOT;
 
@@ -1324,12 +1335,12 @@
     function updateBarStatusBanner() {
       // Bar-open restriction removed: guests can always order.
       barOpen = true;
-      els.barStatusBanner.textContent = 'ORDERS OPEN';
+      els.barStatusBanner.textContent = '';
       els.barStatusBanner.className = 'status-banner status-open';
-      els.barOpenStatus.textContent = 'Status: ORDERS ALWAYS OPEN';
+      els.barOpenStatus.textContent = '';
       els.countingStatus.textContent = 'Counting: ' + (reportActive ? 'ACTIVE' : 'OFF');
       els.btnBarOpen.classList.add('active');
-      els.btnBarOpen.textContent = 'ORDERS ALWAYS OPEN';
+      els.btnBarOpen.textContent = '';
       els.btnBarOpen.disabled = true;
       els.btnActivate.classList.toggle('active', reportActive);
       els.btnActivate.textContent = reportActive ? 'ACTIVE' : 'ACTIVATE';
@@ -1368,8 +1379,8 @@
       btn.innerHTML = '';
       btn.className = 'order-btn';
       btn.disabled = false;
-      els.cancelOrderBtn.style.display = 'none';
-      els.cancelOrderBtn.disabled = false;
+      els.cancelOrderBtn.style.display = 'flex';
+      els.cancelOrderBtn.disabled = true;
 
       const label = document.createElement('span');
       btn.appendChild(label);
@@ -1388,7 +1399,8 @@
           lamp.className = 'red-lamp';
           btn.appendChild(lamp);
           btn.disabled = true;
-          els.cancelOrderBtn.style.display = 'none';
+          els.cancelOrderBtn.style.display = 'flex';
+          els.cancelOrderBtn.disabled = true;
           return;
         }
 
@@ -1398,7 +1410,7 @@
           btn.disabled = true;
 
           if (myActiveOrder.drinkId === drink.id) {
-            els.cancelOrderBtn.style.display = 'block';
+            els.cancelOrderBtn.style.display = 'flex';
             els.cancelOrderBtn.disabled = false;
           }
           return;
@@ -1456,27 +1468,63 @@
 
     function submitOrder() {
       if (sessionRole !== 'user') return;
+      if (!userId) {
+        alert('Connection is not ready yet. Refresh the page and try again.');
+        return;
+      }
       if (myActiveOrder) return;
 
       const drink = getDrinkById(selectedDrinkId);
       if (!drink) return;
 
-      const payload = {
+      const localOrder = {
         clientId: userId,
         userName: displayName,
         drinkId: drink.id,
         drinkName: drink.name,
         status: 'ordered',
-        createdAt: firebase.database.ServerValue.TIMESTAMP,
+        createdAt: Date.now(),
         preparingAt: null
       };
 
-      db.ref(appPath('orders/' + userId)).set(payload);
+      // Immediate visible feedback on the guest screen. Firebase will then sync it to bartender.
+      myActiveOrder = localOrder;
+      ordersMap[userId] = localOrder;
+      updateUserOrderButton();
+      setActiveOrderBanner();
+      renderDrinkGrid();
+
+      const payload = {
+        ...localOrder,
+        createdAt: firebase.database.ServerValue.TIMESTAMP
+      };
+
+      db.ref(appPath('orders/' + userId)).set(payload).catch(err => {
+        myActiveOrder = null;
+        delete ordersMap[userId];
+        updateUserOrderButton();
+        setActiveOrderBanner();
+        renderDrinkGrid();
+        alert('Order was not sent. Firebase error: ' + (err && err.message ? err.message : err));
+      });
     }
 
     function cancelMyOrder() {
       if (!myActiveOrder || myActiveOrder.status !== 'ordered') return;
-      db.ref(appPath('orders/' + userId)).remove();
+      const previous = myActiveOrder;
+      myActiveOrder = null;
+      delete ordersMap[userId];
+      updateUserOrderButton();
+      setActiveOrderBanner();
+      renderDrinkGrid();
+      db.ref(appPath('orders/' + userId)).remove().catch(err => {
+        myActiveOrder = previous;
+        ordersMap[userId] = previous;
+        updateUserOrderButton();
+        setActiveOrderBanner();
+        renderDrinkGrid();
+        alert('Order was not cancelled. Firebase error: ' + (err && err.message ? err.message : err));
+      });
     }
 
     function setBarOpen(nextValue) {
