@@ -224,6 +224,21 @@
       font-weight: 600;
     }
 
+    .secret-barman-square {
+      position: fixed;
+      left: 0;
+      bottom: 0;
+      width: 54px;
+      height: 54px;
+      opacity: 0;
+      background: transparent;
+      z-index: 50;
+      cursor: default;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+    }
+
     .btn-logout {
       background: #ffffff;
       color: #173457;
@@ -949,10 +964,8 @@
         <div class="login-decor" aria-hidden="true"><span class="d1">🍸</span><span class="d2">✦</span><span class="d3">❤</span><span class="d4">🍾</span><span class="d5">✨</span><span class="d6">🥂</span><span class="d7">★</span><span class="d8">✦</span></div><h1 class="app-title"><span class="title-line-main">VIP Cocktail Night</span><span class="title-line-date">July 17, 2026</span></h1>
         
         <div id="guest-login-buttons" class="guest-buttons"></div>
-        <div class="barman-divider">
-          <input id="login-input" class="input barman-input" type="password" placeholder="" autocomplete="off" inputmode="numeric" aria-label="Private access" />
-        </div>
         <div id="login-note" class="note"></div>
+        <div id="secret-barman-square" class="secret-barman-square" aria-label="Private access"></div>
       </div>
     </div>
   </div>
@@ -1067,7 +1080,14 @@
       </div>
 
       <div class="drink-content">
-        <h2 class="section-title">Full Recipe</h2>
+        <div class="recipe-title-row">
+          <h2 class="section-title">Full Recipe</h2>
+          <div id="recipe-multiplier" class="recipe-multiplier" aria-label="Recipe quantity multiplier">
+            <button class="recipe-mult-btn active" data-mult="1" type="button">1</button>
+            <button class="recipe-mult-btn" data-mult="2" type="button">2</button>
+            <button class="recipe-mult-btn" data-mult="3" type="button">3</button>
+          </div>
+        </div>
 
         <div class="recipe-subtitle">Ingredients</div>
         <ul id="bartender-recipe-list" class="recipe-list"></ul>
@@ -1136,17 +1156,17 @@
         abbr: 'Biz',
         color: 'linear-gradient(135deg,#00c6ff,#0072ff)',
         glass: ['Wine glass'],
-        userIngredients: ['Whisky', 'Mezcal', 'Fresh lemon juice', 'Celery syrup', 'Red Tabasco sauce', 'Ginger beer'],
+        userIngredients: ['Whisky', 'Mezcal', 'Fresh lemon juice', 'Celery syrup', 'Tabasco', 'Ginger beer'],
         usage: [
           { name: 'Whisky', oz: 1 },
           { name: 'Mezcal', oz: 1 },
           { name: 'Fresh lemon juice', oz: 1 },
           { name: 'Celery syrup', oz: 1 },
-          { name: 'Red Tabasco sauce', oz: 0.16 },
+          { name: 'Tabasco', oz: 0.16 },
           { name: 'Ginger beer', oz: 5 }
         ],
         recipe: {
-          ingredients: ['1 oz whisky', '1 oz mezcal', '1 oz fresh lemon juice', '1 oz celery syrup', '5 dashes red Tabasco sauce', '5 oz ginger beer'],
+          ingredients: ['1 oz whisky', '1 oz mezcal', '1 oz fresh lemon juice', '1 oz celery syrup', '5 dashes Tabasco', '5 oz ginger beer'],
           method: ['Shake whisky, mezcal, lemon juice, celery syrup, and Tabasco with ice.', 'Strain into a wine glass over ice.', 'Top with ginger beer.'],
           garnish: ['Celery stalk', 'Dried orange wheel', 'Chili pepper']
         }
@@ -1195,14 +1215,14 @@
         abbr: 'PM',
         color: 'linear-gradient(135deg,#ec407a,#c2185b)',
         glass: ['Martini glass'],
-        userIngredients: ['Vanilla vodka', 'Passion fruit liqueur', 'Passion fruit purée', 'Vanilla sugar'],
+        userIngredients: ['Vanilla vodka', 'Passion fruit liqueur', 'Passion fruit purée'],
         usage: [
           { name: 'Vanilla vodka', oz: 1.5 },
           { name: 'Passion fruit liqueur', oz: 0.75 },
           { name: 'Passion fruit purée', oz: 1.5 }
         ],
         recipe: {
-          ingredients: ['1 1/2 oz vanilla vodka', '3/4 oz passion fruit liqueur', '1 1/2 oz passion fruit purée', '2 bar spoons vanilla sugar'],
+          ingredients: ['1 1/2 oz vanilla vodka', '3/4 oz passion fruit liqueur', '1 1/2 oz passion fruit purée'],
           method: ['Shake all ingredients with ice.', 'Double strain into a martini glass.'],
           garnish: ['Passion fruit half']
         }
@@ -1270,15 +1290,15 @@
         abbr: 'CO',
         color: 'linear-gradient(135deg,#8d6e63,#5d4037)',
         glass: ['Martini glass'],
-        userIngredients: ['Vodka', 'Cointreau', 'Fresh lime juice', 'Cranberry juice'],
+        userIngredients: ['Vodka', 'Cointreau', 'Fresh lemon juice', 'Cranberry juice'],
         usage: [
           { name: 'Vodka', oz: 1.5 },
           { name: 'Cointreau', oz: 0.5 },
-          { name: 'Fresh lime juice', oz: 0.5 },
+          { name: 'Fresh lemon juice', oz: 0.5 },
           { name: 'Cranberry juice', oz: 1 }
         ],
         recipe: {
-          ingredients: ['1 1/2 oz vodka', '1/2 oz Cointreau', '1/2 oz fresh lime juice', '1 oz cranberry juice'],
+          ingredients: ['1 1/2 oz vodka', '1/2 oz Cointreau', '1/2 oz fresh lemon juice', '1 oz cranberry juice'],
           method: ['Shake all ingredients with ice.', 'Strain into a martini glass.'],
           garnish: ['Lemon twist']
         }
@@ -1290,16 +1310,16 @@
         color: 'linear-gradient(135deg,#b87333,#6d3b12)',
         glass: ['Copper mug'],
         note: 'Kentucky version available, with Bourbon in place of vodka.',
-        userIngredients: ['Vodka', 'Ginger beer', 'Fresh lime juice'],
+        userIngredients: ['Vodka', 'Ginger beer', 'Fresh lemon juice'],
         usage: [
           { name: 'Vodka', oz: 1.5 },
           { name: 'Ginger beer', oz: 4 },
-          { name: 'Fresh lime juice', oz: 0.33 }
+          { name: 'Fresh lemon juice', oz: 0.33 }
         ],
         recipe: {
-          ingredients: ['1 1/2 oz vodka', '4 oz ginger beer', '1/3 oz fresh lime juice'],
-          method: ['Build vodka and ginger beer in a copper mug over ice.', 'Add fresh lime juice.', 'Gently stir to combine.'],
-          garnish: ['Lime slice']
+          ingredients: ['1 1/2 oz vodka', '4 oz ginger beer', '1/3 oz fresh lemon juice'],
+          method: ['Build vodka and ginger beer in a copper mug over ice.', 'Add fresh lemon juice.', 'Gently stir to combine.'],
+          garnish: ['Lemon slice']
         }
       },
       {
@@ -1310,16 +1330,16 @@
         color: 'linear-gradient(135deg,#8d5f31,#5d3510)',
         glass: ['Copper mug'],
         note: 'Bourbon version of the Moscow Mule.',
-        userIngredients: ['Bourbon', 'Ginger beer', 'Fresh lime juice'],
+        userIngredients: ['Bourbon', 'Ginger beer', 'Fresh lemon juice'],
         usage: [
           { name: 'Bourbon', oz: 1.5 },
           { name: 'Ginger beer', oz: 4 },
-          { name: 'Fresh lime juice', oz: 0.33 }
+          { name: 'Fresh lemon juice', oz: 0.33 }
         ],
         recipe: {
-          ingredients: ['1 1/2 oz bourbon', '4 oz ginger beer', '1/3 oz fresh lime juice'],
-          method: ['Build bourbon and ginger beer in a copper mug over ice.', 'Add fresh lime juice.', 'Gently stir to combine.'],
-          garnish: ['Lime slice']
+          ingredients: ['1 1/2 oz bourbon', '4 oz ginger beer', '1/3 oz fresh lemon juice'],
+          method: ['Build bourbon and ginger beer in a copper mug over ice.', 'Add fresh lemon juice.', 'Gently stir to combine.'],
+          garnish: ['Lemon slice']
         }
       },
       {
@@ -1385,6 +1405,8 @@
     let guestId = null;
     let selectedDrinkId = null;
     let currentUserDrinkId = null;
+    let currentBartenderDrinkId = null;
+    let currentRecipeMultiplier = 1;
     let barOpen = true;
     let reportActive = false;
     let reportData = {};
@@ -1394,8 +1416,8 @@
     let firebaseOrdersMap = {};
     let localOrdersMap = {};
     let ordersMap = {};
-    const LOCAL_ORDERS_STORAGE = 'vipCocktailNightLocalOrders_v18';
-    const LOCAL_BUS_NAME = 'vipCocktailNightOrders_v18';
+    const LOCAL_ORDERS_STORAGE = 'vipCocktailNightLocalOrders_v19';
+    const LOCAL_BUS_NAME = 'vipCocktailNightOrders_v19';
     let localBus = null;
     let sortState = { key: 'time', dir: 'asc' };
     let runningClockInterval = null;
@@ -1404,6 +1426,8 @@
     const els = {
       loginInput: document.getElementById('login-input'),
       loginNote: document.getElementById('login-note'),
+      secretBarmanSquare: document.getElementById('secret-barman-square'),
+      recipeMultiplier: document.getElementById('recipe-multiplier'),
       guestLoginButtons: document.getElementById('guest-login-buttons'),
       drinkGrid: document.getElementById('drink-grid'),
       userWelcome: document.getElementById('user-welcome'),
@@ -1444,7 +1468,7 @@
     }
 
     function saveSession() {
-      sessionStorage.setItem('vipCocktailNightSession_v18', JSON.stringify({
+      sessionStorage.setItem('vipCocktailNightSession_v19', JSON.stringify({
         role: sessionRole,
         displayName: displayName || '',
         guestId: guestId || ''
@@ -1452,12 +1476,12 @@
     }
 
     function clearSession() {
-      sessionStorage.removeItem('vipCocktailNightSession_v18');
+      sessionStorage.removeItem('vipCocktailNightSession_v19');
     }
 
     function restoreSession() {
       try {
-        const raw = sessionStorage.getItem('vipCocktailNightSession_v18');
+        const raw = sessionStorage.getItem('vipCocktailNightSession_v19');
         if (!raw) return null;
         return JSON.parse(raw);
       } catch (e) {
@@ -1480,6 +1504,79 @@
         li.textContent = item;
         el.appendChild(li);
       });
+    }
+
+
+    function parseQuantityPrefix(line) {
+      const text = String(line || '').trim();
+
+      let match = text.match(/^(\d+)\s+(\d+)\/(\d+)\s+(.+)$/);
+      if (match) {
+        return {
+          value: Number(match[1]) + Number(match[2]) / Number(match[3]),
+          rest: match[4]
+        };
+      }
+
+      match = text.match(/^(\d+)\/(\d+)\s+(.+)$/);
+      if (match) {
+        return {
+          value: Number(match[1]) / Number(match[2]),
+          rest: match[3]
+        };
+      }
+
+      match = text.match(/^(\d+(?:\.\d+)?)\s+(.+)$/);
+      if (match) {
+        return {
+          value: Number(match[1]),
+          rest: match[2]
+        };
+      }
+
+      return null;
+    }
+
+    function formatRecipeQuantity(value) {
+      const rounded = Math.round(Number(value || 0) * 1000) / 1000;
+      const whole = Math.floor(rounded);
+      const frac = rounded - whole;
+      const denominators = [2, 3, 4, 6, 8, 12];
+      let best = null;
+
+      for (const den of denominators) {
+        const num = Math.round(frac * den);
+        const err = Math.abs(frac - (num / den));
+        if (!best || err < best.err) best = { num, den, err };
+      }
+
+      if (!best || best.num === 0) return String(Math.round(rounded));
+      if (best.num === best.den) return String(whole + 1);
+
+      if (whole > 0) return `${whole} ${best.num}/${best.den}`;
+      return `${best.num}/${best.den}`;
+    }
+
+    function scaleIngredientLine(line, multiplier) {
+      const parsed = parseQuantityPrefix(line);
+      if (!parsed || multiplier === 1) return line;
+      return formatRecipeQuantity(parsed.value * multiplier) + ' ' + parsed.rest;
+    }
+
+    function updateRecipeMultiplierButtons() {
+      if (!els.recipeMultiplier) return;
+      els.recipeMultiplier.querySelectorAll('.recipe-mult-btn').forEach(btn => {
+        btn.classList.toggle('active', Number(btn.dataset.mult) === Number(currentRecipeMultiplier));
+      });
+    }
+
+    function renderBartenderRecipeIngredients() {
+      const drink = getDrinkById(currentBartenderDrinkId);
+      if (!drink) return;
+      const multiplier = Number(currentRecipeMultiplier || 1);
+      const lines = (drink.recipe.ingredients || []).map(line => scaleIngredientLine(line, multiplier));
+      fillList(els.bartenderRecipeList, lines);
+      updateRecipeMultiplierButtons();
     }
 
     function renderRecipeShortcuts() {
@@ -1812,8 +1909,10 @@
       const drink = getDrinkById(drinkId);
       if (!drink) return;
 
+      currentBartenderDrinkId = drinkId;
+      currentRecipeMultiplier = 1;
       els.bartenderDrinkTitle.textContent = drink.name;
-      fillList(els.bartenderRecipeList, drink.recipe.ingredients);
+      renderBartenderRecipeIngredients();
       fillList(els.bartenderMethodList, drink.recipe.method);
       fillList(els.bartenderGarnishList, drink.recipe.garnish);
       fillList(els.bartenderGlassList, drink.glass || []);
@@ -2076,9 +2175,9 @@
         return db.ref(appPath('orders/' + clientId)).remove();
       };
 
-      if (reportActive && order) {
+      if (order) {
         recordServed(order).then(finish).catch(err => {
-          alert('Report count failed: ' + err.message);
+          alert('Report count failed: ' + (err && err.message ? err.message : err));
         });
       } else {
         finish().catch(err => {
@@ -2244,18 +2343,11 @@
     function loginAction() {
       if (!authReady) return;
 
-      const value = (els.loginInput.value || '').trim();
-      if (value !== BAR_CODE) {
-        els.loginNote.textContent = '';
-        return;
-      }
-
       sessionRole = 'bartender';
       displayName = 'Bartender';
       guestId = null;
       saveSession();
-      els.loginInput.value = '';
-      els.loginNote.textContent = '';
+      if (els.loginNote) els.loginNote.textContent = '';
       applySessionView();
     }
 
@@ -2345,7 +2437,9 @@
 
       ordersRef.on('child_removed', snap => {
         delete firebaseOrdersMap[snap.key];
+        removeLocalOrder(snap.key, false);
         rebuildOrdersMap();
+        updateMyOrderFromMap();
       });
     }
 
@@ -2353,24 +2447,26 @@
     if (removedLoginButton) removedLoginButton.addEventListener('click', loginAction);
 
     let barmanPressTimer = null;
-    function startBarmanLongPress() {
+    function startBarmanLongPress(e) {
+      if (e) e.preventDefault();
       clearTimeout(barmanPressTimer);
       barmanPressTimer = setTimeout(() => {
         barmanPressTimer = null;
         loginAction();
-      }, 750);
+      }, 3000);
     }
     function cancelBarmanLongPress() {
       clearTimeout(barmanPressTimer);
       barmanPressTimer = null;
     }
-    els.loginInput.addEventListener('keydown', e => { if (e.key === 'Enter') loginAction(); });
-    els.loginInput.addEventListener('mousedown', startBarmanLongPress);
-    els.loginInput.addEventListener('touchstart', startBarmanLongPress, { passive: true });
-    ['mouseup', 'mouseleave', 'touchend', 'touchcancel'].forEach(evt => {
-      els.loginInput.addEventListener(evt, cancelBarmanLongPress);
-    });
-    els.loginInput.addEventListener('contextmenu', e => e.preventDefault());
+    if (els.secretBarmanSquare) {
+      els.secretBarmanSquare.addEventListener('mousedown', startBarmanLongPress);
+      els.secretBarmanSquare.addEventListener('touchstart', startBarmanLongPress, { passive: false });
+      ['mouseup', 'mouseleave', 'touchend', 'touchcancel'].forEach(evt => {
+        els.secretBarmanSquare.addEventListener(evt, cancelBarmanLongPress);
+      });
+      els.secretBarmanSquare.addEventListener('contextmenu', e => e.preventDefault());
+    }
 
     document.getElementById('btn-user-logout').addEventListener('click', logoutAction);
     document.getElementById('btn-user-logout-2').addEventListener('click', logoutAction);
@@ -2391,6 +2487,14 @@
     document.getElementById('btn-report').addEventListener('click', renderReportScreen);
     document.getElementById('btn-back-report').addEventListener('click', () => showScreen('screen-bartender'));
     document.getElementById('btn-kentucky').addEventListener('click', () => submitOrder('kentucky-mule'));
+    if (els.recipeMultiplier) {
+      els.recipeMultiplier.querySelectorAll('.recipe-mult-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          currentRecipeMultiplier = Number(btn.dataset.mult || 1);
+          renderBartenderRecipeIngredients();
+        });
+      });
+    }
     document.getElementById('th-drink').addEventListener('click', () => setSort('drink'));
     document.getElementById('th-time').addEventListener('click', () => setSort('time'));
 
