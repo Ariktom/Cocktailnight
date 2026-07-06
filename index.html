@@ -228,11 +228,11 @@
       position: fixed;
       left: 0;
       bottom: 0;
-      width: 54px;
-      height: 54px;
-      opacity: 0;
-      background: transparent;
-      z-index: 50;
+      width: 120px;
+      height: 120px;
+      opacity: 1;
+      background: rgba(255,255,255,0.001);
+      z-index: 999999;
       cursor: default;
       user-select: none;
       -webkit-user-select: none;
@@ -1416,8 +1416,8 @@
     let firebaseOrdersMap = {};
     let localOrdersMap = {};
     let ordersMap = {};
-    const LOCAL_ORDERS_STORAGE = 'vipCocktailNightLocalOrders_v19';
-    const LOCAL_BUS_NAME = 'vipCocktailNightOrders_v19';
+    const LOCAL_ORDERS_STORAGE = 'vipCocktailNightLocalOrders_v20';
+    const LOCAL_BUS_NAME = 'vipCocktailNightOrders_v20';
     let localBus = null;
     let sortState = { key: 'time', dir: 'asc' };
     let runningClockInterval = null;
@@ -1468,7 +1468,7 @@
     }
 
     function saveSession() {
-      sessionStorage.setItem('vipCocktailNightSession_v19', JSON.stringify({
+      sessionStorage.setItem('vipCocktailNightSession_v20', JSON.stringify({
         role: sessionRole,
         displayName: displayName || '',
         guestId: guestId || ''
@@ -1476,12 +1476,12 @@
     }
 
     function clearSession() {
-      sessionStorage.removeItem('vipCocktailNightSession_v19');
+      sessionStorage.removeItem('vipCocktailNightSession_v20');
     }
 
     function restoreSession() {
       try {
-        const raw = sessionStorage.getItem('vipCocktailNightSession_v19');
+        const raw = sessionStorage.getItem('vipCocktailNightSession_v20');
         if (!raw) return null;
         return JSON.parse(raw);
       } catch (e) {
@@ -2447,26 +2447,66 @@
     if (removedLoginButton) removedLoginButton.addEventListener('click', loginAction);
 
     let barmanPressTimer = null;
+
+    function isLoginScreenVisible() {
+      const loginScreen = document.getElementById('screen-login');
+      return !!(loginScreen && loginScreen.classList.contains('active'));
+    }
+
+    function isInSecretCorner(x, y) {
+      return x <= 140 && y >= (window.innerHeight - 140);
+    }
+
     function startBarmanLongPress(e) {
-      if (e) e.preventDefault();
+      if (!isLoginScreenVisible()) return;
+      if (e && e.cancelable) e.preventDefault();
+
       clearTimeout(barmanPressTimer);
       barmanPressTimer = setTimeout(() => {
         barmanPressTimer = null;
         loginAction();
       }, 3000);
     }
+
     function cancelBarmanLongPress() {
       clearTimeout(barmanPressTimer);
       barmanPressTimer = null;
     }
+
+    function handleSecretPointerDown(e) {
+      startBarmanLongPress(e);
+    }
+
+    function handleDocumentPointerDown(e) {
+      if (!isLoginScreenVisible()) return;
+      if (isInSecretCorner(e.clientX || 0, e.clientY || 0)) {
+        startBarmanLongPress(e);
+      }
+    }
+
+    function handleDocumentTouchStart(e) {
+      if (!isLoginScreenVisible()) return;
+      const t = e.touches && e.touches[0];
+      if (t && isInSecretCorner(t.clientX || 0, t.clientY || 0)) {
+        startBarmanLongPress(e);
+      }
+    }
+
     if (els.secretBarmanSquare) {
-      els.secretBarmanSquare.addEventListener('mousedown', startBarmanLongPress);
-      els.secretBarmanSquare.addEventListener('touchstart', startBarmanLongPress, { passive: false });
-      ['mouseup', 'mouseleave', 'touchend', 'touchcancel'].forEach(evt => {
+      els.secretBarmanSquare.addEventListener('pointerdown', handleSecretPointerDown);
+      els.secretBarmanSquare.addEventListener('mousedown', handleSecretPointerDown);
+      els.secretBarmanSquare.addEventListener('touchstart', handleSecretPointerDown, { passive: false });
+      ['pointerup', 'pointercancel', 'mouseup', 'mouseleave', 'touchend', 'touchcancel'].forEach(evt => {
         els.secretBarmanSquare.addEventListener(evt, cancelBarmanLongPress);
       });
       els.secretBarmanSquare.addEventListener('contextmenu', e => e.preventDefault());
     }
+
+    document.addEventListener('pointerdown', handleDocumentPointerDown, true);
+    document.addEventListener('touchstart', handleDocumentTouchStart, { passive: false, capture: true });
+    ['pointerup', 'pointercancel', 'mouseup', 'touchend', 'touchcancel'].forEach(evt => {
+      document.addEventListener(evt, cancelBarmanLongPress, true);
+    });
 
     document.getElementById('btn-user-logout').addEventListener('click', logoutAction);
     document.getElementById('btn-user-logout-2').addEventListener('click', logoutAction);
