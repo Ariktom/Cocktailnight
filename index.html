@@ -670,7 +670,9 @@
     }
 
     .activate-btn.active {
-      box-shadow: 0 0 0 3px rgba(33,150,243,0.30), 0 6px 14px rgba(0,0,0,0.28);
+      background: linear-gradient(135deg, #ffe05f, #ffc107);
+      color: #241900;
+      box-shadow: 0 0 0 4px rgba(255,224,95,0.34), 0 6px 14px rgba(0,0,0,0.28);
     }
 
     .report-btn {
@@ -945,6 +947,7 @@
       .menu-ornament::before,
       .menu-ornament::after { width: 44px; }
       .alt-order-btn { font-size: 15px; min-height: 42px; }
+      .recipe-mult-btn { min-width: 58px; height: 50px; font-size: 23px; }
     }
 
     @media (max-width: 560px) {
@@ -1416,8 +1419,8 @@
     let firebaseOrdersMap = {};
     let localOrdersMap = {};
     let ordersMap = {};
-    const LOCAL_ORDERS_STORAGE = 'vipCocktailNightLocalOrders_v20';
-    const LOCAL_BUS_NAME = 'vipCocktailNightOrders_v20';
+    const LOCAL_ORDERS_STORAGE = 'vipCocktailNightLocalOrders_v21';
+    const LOCAL_BUS_NAME = 'vipCocktailNightOrders_v21';
     let localBus = null;
     let sortState = { key: 'time', dir: 'asc' };
     let runningClockInterval = null;
@@ -1468,7 +1471,7 @@
     }
 
     function saveSession() {
-      sessionStorage.setItem('vipCocktailNightSession_v20', JSON.stringify({
+      sessionStorage.setItem('vipCocktailNightSession_v21', JSON.stringify({
         role: sessionRole,
         displayName: displayName || '',
         guestId: guestId || ''
@@ -1476,12 +1479,12 @@
     }
 
     function clearSession() {
-      sessionStorage.removeItem('vipCocktailNightSession_v20');
+      sessionStorage.removeItem('vipCocktailNightSession_v21');
     }
 
     function restoreSession() {
       try {
-        const raw = sessionStorage.getItem('vipCocktailNightSession_v20');
+        const raw = sessionStorage.getItem('vipCocktailNightSession_v21');
         if (!raw) return null;
         return JSON.parse(raw);
       } catch (e) {
@@ -1700,7 +1703,7 @@
       }
       els.countingStatus.textContent = 'Counting: ' + (reportActive ? 'ACTIVE' : 'OFF');
       els.btnActivate.classList.toggle('active', reportActive);
-      els.btnActivate.textContent = reportActive ? 'ACTIVE' : 'ACTIVATE';
+      els.btnActivate.textContent = reportActive ? 'COUNTING ACTIVE' : 'ACTIVATE';
       renderDrinkGrid();
     }
 
@@ -2024,9 +2027,14 @@
       }
       reportActive = true;
       updateBarStatusBanner();
-      db.ref(appPath('report')).set({ activatedAt: firebase.database.ServerValue.TIMESTAMP }).catch(err => {
+
+      db.ref(appPath('report')).update({
+        activatedAt: firebase.database.ServerValue.TIMESTAMP,
+        active: true
+      }).catch(err => {
         alert('Report activation failed. Firebase error: ' + (err && err.message ? err.message : err));
       });
+
       db.ref(appPath('state/reportActive')).set(true).catch(err => {
         alert('Counting status was not saved online. Firebase error: ' + (err && err.message ? err.message : err));
       });
@@ -2036,6 +2044,7 @@
       const drink = getDrinkById(order && order.drinkId);
       if (!drink || !order) return Promise.resolve();
 
+      const servedRef = db.ref(appPath('report/servedOrders')).push();
       const servedPayload = {
         clientId: order.clientId || '',
         guestId: order.guestId || order.clientId || '',
@@ -2044,12 +2053,25 @@
         drinkName: drink.name,
         createdAt: order.createdAt || null,
         statusAtReady: order.status || 'ordered',
+        reportWasActive: !!reportActive,
         servedAt: firebase.database.ServerValue.TIMESTAMP
       };
 
-      // Store the served drink as history. The report screen calculates cocktail counts
-      // and ingredient quantities directly from this served list and the recipe data.
-      return db.ref(appPath('report/servedOrders')).push(servedPayload);
+      const updates = {};
+      updates['servedOrders/' + servedRef.key] = servedPayload;
+      updates['cocktails/' + drink.id] = firebase.database.ServerValue.increment(1);
+      updates['cocktailNames/' + drink.id] = drink.name;
+      updates['lastServedAt'] = firebase.database.ServerValue.TIMESTAMP;
+
+      (drink.usage || []).forEach(item => {
+        const key = safeKey(item.name);
+        updates['ingredients/' + key] = firebase.database.ServerValue.increment(Number(item.oz || 0));
+        updates['ingredientNames/' + key] = item.name;
+      });
+
+      // Keep all report data under the existing permitted Firebase report path.
+      // The aggregate counters make the report reliable even if the served history list is slow to refresh.
+      return db.ref(appPath('report')).update(updates);
     }
 
     function formatOz(value) {
@@ -2099,33 +2121,43 @@
       const ingredientTotals = {};
       let servedCount = 0;
 
-      Object.keys(servedOrders).forEach(key => {
-        const served = servedOrders[key] || {};
-        const drink = getDrinkById(served.drinkId);
-        if (!drink) return;
-
-        servedCount += 1;
-        cocktailTotals[drink.id] = cocktailTotals[drink.id] || { name: drink.name, count: 0 };
-        cocktailTotals[drink.id].count += 1;
-
-        (drink.usage || []).forEach(item => {
-          const ikey = safeKey(item.name);
-          ingredientTotals[ikey] = ingredientTotals[ikey] || { name: item.name, oz: 0 };
-          ingredientTotals[ikey].oz += Number(item.oz || 0);
-          ingredientTotals[ikey].oz = Math.round(ingredientTotals[ikey].oz * 1000) / 1000;
-        });
+      // Preferred source: aggregate counters written directly when READY is pressed.
+      const reportCocktails = (reportData && reportData.cocktails) || {};
+      const cocktailNames = (reportData && reportData.cocktailNames) || {};
+      Object.keys(reportCocktails).forEach(id => {
+        const count = Number(reportCocktails[id] || 0);
+        if (count > 0) {
+          servedCount += count;
+          cocktailTotals[id] = { name: cocktailNames[id] || (getDrinkById(id) || {}).name || id, count: count };
+        }
       });
 
-      // Fallback for older report data, if any exists from a previous version.
-      if (!servedCount && reportData && reportData.cocktails) {
-        const cocktailNames = reportData.cocktailNames || {};
-        Object.keys(reportData.cocktails || {}).forEach(id => {
-          cocktailTotals[id] = { name: cocktailNames[id] || id, count: Number(reportData.cocktails[id] || 0) };
-        });
+      const reportIngredients = (reportData && reportData.ingredients) || {};
+      const ingredientNames = (reportData && reportData.ingredientNames) || {};
+      Object.keys(reportIngredients).forEach(key => {
+        const oz = Number(reportIngredients[key] || 0);
+        if (oz > 0) {
+          ingredientTotals[key] = { name: ingredientNames[key] || key, oz: Math.round(oz * 1000) / 1000 };
+        }
+      });
 
-        const ingredientNames = reportData.ingredientNames || {};
-        Object.keys(reportData.ingredients || {}).forEach(key => {
-          ingredientTotals[key] = { name: ingredientNames[key] || key, oz: Number(reportData.ingredients[key] || 0) };
+      // Fallback: calculate from servedOrders if aggregate counters are missing.
+      if (!servedCount) {
+        Object.keys(servedOrders).forEach(key => {
+          const served = servedOrders[key] || {};
+          const drink = getDrinkById(served.drinkId);
+          if (!drink) return;
+
+          servedCount += 1;
+          cocktailTotals[drink.id] = cocktailTotals[drink.id] || { name: drink.name, count: 0 };
+          cocktailTotals[drink.id].count += 1;
+
+          (drink.usage || []).forEach(item => {
+            const ikey = safeKey(item.name);
+            ingredientTotals[ikey] = ingredientTotals[ikey] || { name: item.name, oz: 0 };
+            ingredientTotals[ikey].oz += Number(item.oz || 0);
+            ingredientTotals[ikey].oz = Math.round(ingredientTotals[ikey].oz * 1000) / 1000;
+          });
         });
       }
 
@@ -2139,17 +2171,17 @@
         formatOz(ingredientTotals[key].oz) + ' oz'
       ]).sort((a,b) => a[0].localeCompare(b[0]));
 
-      return { cocktailRows, ingredientRows };
+      return { cocktailRows, ingredientRows, servedCount };
     }
 
     function paintReportFromData(dataObj) {
       reportData = dataObj || {};
       const activatedAt = reportData && reportData.activatedAt;
-      els.reportMeta.textContent = activatedAt
-        ? 'Counting activated: ' + new Date(activatedAt).toLocaleString()
-        : 'Counting not activated';
-
       const rows = buildReportRowsFromServedOrders();
+
+      els.reportMeta.textContent = activatedAt
+        ? 'Counting activated: ' + new Date(activatedAt).toLocaleString() + ' · Served: ' + rows.servedCount
+        : 'Counting not activated · Served: ' + rows.servedCount;
 
       els.reportCocktails.innerHTML = '';
       els.reportCocktails.appendChild(makeReportTable(['Cocktail', 'Served'], rows.cocktailRows));
@@ -2159,7 +2191,7 @@
     }
 
     function renderReportScreen() {
-      db.ref(appPath('report')).get().then(snap => {
+      db.ref(appPath('report')).once('value').then(snap => {
         paintReportFromData(snap.val() || {});
         showScreen('screen-report');
       }).catch(() => {
@@ -2465,7 +2497,7 @@
       barmanPressTimer = setTimeout(() => {
         barmanPressTimer = null;
         loginAction();
-      }, 3000);
+      }, 1500);
     }
 
     function cancelBarmanLongPress() {
