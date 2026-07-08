@@ -1079,21 +1079,25 @@
     }
 
 
-    /* v24: highlight duplicate cocktail orders in the Order column */
-    .orders-table td.duplicate-order-cell {
-      border-radius: 12px;
-      box-shadow: inset 0 0 0 2px rgba(255,255,255,0.34), 0 2px 8px rgba(0,0,0,0.14);
-      font-weight: 1000;
+    /* v25: subtle duplicate cocktail marker in the Order column */
+    .dup-marker {
+      display: inline-block;
+      width: 11px;
+      height: 11px;
+      border-radius: 3px;
+      margin-left: 7px;
+      vertical-align: middle;
+      box-shadow: 0 0 0 2px rgba(255,255,255,0.42), 0 2px 6px rgba(0,0,0,0.35);
     }
 
-    .orders-table td.dup-order-1 { background: #fff4a8; color: #332700; }
-    .orders-table td.dup-order-2 { background: #bfe9ff; color: #04283a; }
-    .orders-table td.dup-order-3 { background: #c9f5c9; color: #063006; }
-    .orders-table td.dup-order-4 { background: #ffd5df; color: #4a0717; }
-    .orders-table td.dup-order-5 { background: #e0d4ff; color: #1d1245; }
-    .orders-table td.dup-order-6 { background: #ffd8ae; color: #442000; }
-    .orders-table td.dup-order-7 { background: #c8f3ec; color: #04352e; }
-    .orders-table td.dup-order-8 { background: #f0e7bf; color: #2f2708; }
+    .dup-marker.dup-order-1 { background: #ffe05f; }
+    .dup-marker.dup-order-2 { background: #8ad7ff; }
+    .dup-marker.dup-order-3 { background: #8dec8d; }
+    .dup-marker.dup-order-4 { background: #ff9eb8; }
+    .dup-marker.dup-order-5 { background: #bea8ff; }
+    .dup-marker.dup-order-6 { background: #ffb46f; }
+    .dup-marker.dup-order-7 { background: #76e3d5; }
+    .dup-marker.dup-order-8 { background: #eadb8e; }
 
   </style>
 </head>
@@ -1301,13 +1305,13 @@
           { name: 'Mezcal', oz: 1 },
           { name: 'Fresh lemon juice', oz: 1 },
           { name: 'Celery syrup', oz: 1 },
-          { name: 'Tabasco', oz: 0.16 },
-          { name: 'Ginger beer', oz: 5 }
+          { name: 'Tabasco', amount: 5, unit: 'dashes' },
+          { name: 'Ginger beer', oz: 3.5 }
         ],
         recipe: {
-          ingredients: ['1 oz whisky', '1 oz mezcal', '1 oz fresh lemon juice', '1 oz celery syrup', '5 dashes Tabasco', '5 oz ginger beer'],
+          ingredients: ['1 oz whisky', '1 oz mezcal', '1 oz fresh lemon juice', '1 oz celery syrup', '5 dashes Tabasco', '3 1/2 oz ginger beer'],
           method: ['Shake whisky, mezcal, lemon juice, celery syrup, and Tabasco with ice.', 'Strain into a wine glass over ice.', 'Top with ginger beer.'],
-          garnish: ['Celery stalk', 'Dried orange wheel', 'Chili pepper']
+          garnish: ['Celery leaf']
         }
       },
       {
@@ -1416,7 +1420,8 @@
           { name: 'Gin', oz: 1 },
           { name: 'Campari', oz: 1 },
           { name: 'Fresh lemon juice', oz: 0.75 },
-          { name: 'Maple syrup', oz: 0.5 }
+          { name: 'Maple syrup', oz: 0.5 },
+          { name: 'Muddled grapes', amount: 5, unit: 'grapes' }
         ],
         recipe: {
           ingredients: ['1 oz gin', '1 oz Campari', '3/4 oz fresh lemon juice', '1/2 oz maple syrup', '5 muddled grapes'],
@@ -1459,7 +1464,7 @@
         recipe: {
           ingredients: ['1 1/2 oz vodka', '4 oz ginger beer', '1/3 oz fresh lemon juice'],
           method: ['Build vodka and ginger beer in a copper mug over ice.', 'Add fresh lemon juice.', 'Gently stir to combine.'],
-          garnish: ['Lemon slice']
+          garnish: ['Mint sprigs']
         }
       },
       {
@@ -1557,12 +1562,13 @@
     let localOrdersMap = {};
     let localReportData = {};
     let simpleReportCounts = {};
+    let simpleReportIngredients = {};
     let simpleReportActivatedAt = null;
     let ordersMap = {};
-    const LOCAL_ORDERS_STORAGE = 'vipCocktailNightLocalOrders_v23';
-    const LOCAL_REPORT_STORAGE = 'vipCocktailNightReport_v23';
-    const SIMPLE_REPORT_STORAGE = 'vipCocktailNightSimpleReport_v23';
-    const LOCAL_BUS_NAME = 'vipCocktailNightOrders_v23';
+    const LOCAL_ORDERS_STORAGE = 'vipCocktailNightLocalOrders_v25';
+    const LOCAL_REPORT_STORAGE = 'vipCocktailNightReport_v25';
+    const SIMPLE_REPORT_STORAGE = 'vipCocktailNightSimpleReport_v25';
+    const LOCAL_BUS_NAME = 'vipCocktailNightOrders_v25';
     let localBus = null;
     let sortState = { key: 'time', dir: 'asc' };
     let runningClockInterval = null;
@@ -1614,7 +1620,7 @@
     }
 
     function saveSession() {
-      sessionStorage.setItem('vipCocktailNightSession_v23', JSON.stringify({
+      sessionStorage.setItem('vipCocktailNightSession_v25', JSON.stringify({
         role: sessionRole,
         displayName: displayName || '',
         guestId: guestId || ''
@@ -1622,12 +1628,12 @@
     }
 
     function clearSession() {
-      sessionStorage.removeItem('vipCocktailNightSession_v23');
+      sessionStorage.removeItem('vipCocktailNightSession_v25');
     }
 
     function restoreSession() {
       try {
-        const raw = sessionStorage.getItem('vipCocktailNightSession_v23');
+        const raw = sessionStorage.getItem('vipCocktailNightSession_v25');
         if (!raw) return null;
         return JSON.parse(raw);
       } catch (e) {
@@ -2322,14 +2328,89 @@
         .toLowerCase();
     }
 
+    function getReportDrinks() {
+      return drinks.slice().sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    function getUsageAmount(item) {
+      if (!item) return 0;
+      if (typeof item.amount === 'number') return item.amount;
+      if (typeof item.count === 'number') return item.count;
+      return Number(item.oz || 0);
+    }
+
+    function getUsageUnit(item) {
+      if (!item) return 'oz';
+      if (item.unit) return item.unit;
+      if (typeof item.oz === 'number') return 'oz';
+      if (typeof item.count === 'number') return 'count';
+      return 'oz';
+    }
+
+    function isAlcoholicIngredient(name) {
+      const alcohol = [
+        'amaro montenegro',
+        'aperol',
+        'arack',
+        'bourbon',
+        'campari',
+        'cointreau',
+        'crème de violette',
+        'creme de violette',
+        'gin',
+        'maraschino liqueur',
+        'mezcal',
+        'passoa',
+        'red wine',
+        'vodka',
+        'whisky',
+        'whiskey'
+      ];
+      return alcohol.indexOf(String(name || '').toLowerCase()) !== -1;
+    }
+
+    function getIngredientCatalog() {
+      const catalog = {};
+
+      getReportDrinks().forEach(drink => {
+        (drink.usage || []).forEach(item => {
+          const key = safeKey(item.name);
+          if (!catalog[key]) {
+            catalog[key] = {
+              key: key,
+              name: item.name,
+              unit: getUsageUnit(item),
+              category: isAlcoholicIngredient(item.name) ? 'alcohol' : 'other'
+            };
+          }
+        });
+      });
+
+      return Object.keys(catalog).map(key => catalog[key]).sort((a, b) => {
+        if (a.category !== b.category) return a.category === 'alcohol' ? -1 : 1;
+        return a.name.localeCompare(b.name);
+      });
+    }
+
+    function normalizeSimpleReportData(data) {
+      const out = data && typeof data === 'object' ? data : {};
+      return {
+        activatedAt: out.activatedAt || null,
+        counts: (out.counts && typeof out.counts === 'object') ? out.counts : {},
+        ingredients: (out.ingredients && typeof out.ingredients === 'object') ? out.ingredients : {}
+      };
+    }
+
     function loadSimpleReport() {
       try {
         const raw = localStorage.getItem(SIMPLE_REPORT_STORAGE);
-        const data = raw ? JSON.parse(raw) : {};
-        simpleReportCounts = (data && data.counts && typeof data.counts === 'object') ? data.counts : {};
-        simpleReportActivatedAt = data && data.activatedAt ? data.activatedAt : null;
+        const data = normalizeSimpleReportData(raw ? JSON.parse(raw) : {});
+        simpleReportCounts = data.counts;
+        simpleReportIngredients = data.ingredients;
+        simpleReportActivatedAt = data.activatedAt;
       } catch (e) {
         simpleReportCounts = {};
+        simpleReportIngredients = {};
         simpleReportActivatedAt = null;
       }
     }
@@ -2338,13 +2419,15 @@
       try {
         localStorage.setItem(SIMPLE_REPORT_STORAGE, JSON.stringify({
           activatedAt: simpleReportActivatedAt,
-          counts: simpleReportCounts || {}
+          counts: simpleReportCounts || {},
+          ingredients: simpleReportIngredients || {}
         }));
       } catch (e) {}
     }
 
     function clearSimpleReport() {
       simpleReportCounts = {};
+      simpleReportIngredients = {};
       simpleReportActivatedAt = null;
       try {
         localStorage.removeItem(SIMPLE_REPORT_STORAGE);
@@ -2366,17 +2449,39 @@
       loadSimpleReport();
 
       if (!simpleReportActivatedAt) simpleReportActivatedAt = Date.now();
+
+      // Direct cocktail increment.
       simpleReportCounts[drink.id] = Number(simpleReportCounts[drink.id] || 0) + 1;
+
+      // Direct ingredient increments from the served cocktail recipe usage.
+      (drink.usage || []).forEach(item => {
+        const key = safeKey(item.name);
+        const amount = getUsageAmount(item);
+        const unit = getUsageUnit(item);
+
+        if (!simpleReportIngredients[key]) {
+          simpleReportIngredients[key] = {
+            name: item.name,
+            unit: unit,
+            category: isAlcoholicIngredient(item.name) ? 'alcohol' : 'other',
+            amount: 0
+          };
+        }
+
+        simpleReportIngredients[key].amount = Math.round((Number(simpleReportIngredients[key].amount || 0) + amount) * 1000) / 1000;
+        simpleReportIngredients[key].unit = unit;
+        simpleReportIngredients[key].name = item.name;
+      });
+
       saveSimpleReport();
       updateServedCountStatus();
 
-      // Firebase backup only. The visible report does not depend on this.
+      // Firebase backup only. The visible report does not depend on Firebase.
       try {
         const updates = {};
-        updates['simpleCounts/' + drink.id] = firebase.database.ServerValue.increment
-          ? firebase.database.ServerValue.increment(1)
-          : Number(simpleReportCounts[drink.id] || 0);
+        updates['simpleCounts/' + drink.id] = simpleReportCounts[drink.id];
         updates['simpleNames/' + drink.id] = drink.name;
+        updates['simpleIngredients'] = simpleReportIngredients;
         updates['lastReadyAt'] = firebase.database.ServerValue.TIMESTAMP;
         db.ref(appPath('report')).update(updates).catch(err => {
           console.warn('Online report backup failed. Local count is still OK:', err);
@@ -2388,33 +2493,34 @@
       return true;
     }
 
+    function formatReportAmount(amount, unit) {
+      const num = Number(amount || 0);
+      if (unit === 'oz') return formatOz(num) + ' oz';
+      if (unit === 'dashes') return formatOz(num) + ' dashes';
+      if (unit === 'grapes') return formatOz(num) + ' grapes';
+      if (unit === 'count') return formatOz(num);
+      return formatOz(num) + (unit ? ' ' + unit : '');
+    }
+
     function buildSimpleReportRows() {
       loadSimpleReport();
 
-      const cocktailRows = [];
-      const ingredientTotals = {};
+      // Always show all 11 cocktails, alphabetically, including hidden Kentucky Mule.
+      const cocktailRows = getReportDrinks().map(drink => [
+        drink.name,
+        String(Number(simpleReportCounts[drink.id] || 0))
+      ]);
 
-      Object.keys(simpleReportCounts || {}).forEach(id => {
-        const count = Number(simpleReportCounts[id] || 0);
-        const drink = getDrinkById(id);
-        if (!drink || count <= 0) return;
-
-        cocktailRows.push([drink.name, String(count)]);
-
-        (drink.usage || []).forEach(item => {
-          const key = safeKey(item.name);
-          ingredientTotals[key] = ingredientTotals[key] || { name: item.name, oz: 0 };
-          ingredientTotals[key].oz += Number(item.oz || 0) * count;
-          ingredientTotals[key].oz = Math.round(ingredientTotals[key].oz * 1000) / 1000;
-        });
+      // Always show all ingredients in fixed order:
+      // alcoholic ingredients alphabetically first, then non-alcoholic/other alphabetically.
+      const ingredientRows = getIngredientCatalog().map(info => {
+        const saved = simpleReportIngredients[info.key] || {};
+        const amount = Number(saved.amount || 0);
+        return [
+          info.name,
+          formatReportAmount(amount, info.unit)
+        ];
       });
-
-      cocktailRows.sort((a,b) => a[0].localeCompare(b[0]));
-
-      const ingredientRows = Object.keys(ingredientTotals).map(key => [
-        ingredientTotals[key].name,
-        formatOz(ingredientTotals[key].oz) + ' oz'
-      ]).sort((a,b) => a[0].localeCompare(b[0]));
 
       return {
         cocktailRows,
@@ -2604,15 +2710,19 @@
 
         const tdDrink = document.createElement('td');
         const duplicateKey = order.drinkId || order.drinkName || '';
-        if (duplicateClassByDrink[duplicateKey]) {
-          tdDrink.className = 'duplicate-order-cell ' + duplicateClassByDrink[duplicateKey];
-        }
 
         const drinkLink = document.createElement('span');
         drinkLink.className = 'drink-link';
         drinkLink.textContent = order.drinkName || 'Drink';
         drinkLink.addEventListener('click', () => openBartenderRecipeScreen(order.drinkId));
         tdDrink.appendChild(drinkLink);
+
+        if (duplicateClassByDrink[duplicateKey]) {
+          const marker = document.createElement('span');
+          marker.className = 'dup-marker ' + duplicateClassByDrink[duplicateKey];
+          marker.title = 'Duplicate order group';
+          tdDrink.appendChild(marker);
+        }
 
         const tdTime = document.createElement('td');
         tdTime.textContent = formatElapsed(Date.now() - (order.createdAt || Date.now()));
