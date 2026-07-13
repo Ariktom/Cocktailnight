@@ -1112,11 +1112,12 @@
       font-weight: 1000;
     }
 
-
-    /* v27: report mobile width fix */
+    /* v28: report mobile card layout and synced report readability */
     .report-screen-wrap {
       width: 100%;
-      max-width: 100%;
+      max-width: 760px;
+      margin-left: auto;
+      margin-right: auto;
       overflow-x: hidden;
     }
 
@@ -1130,7 +1131,7 @@
     .report-table {
       width: 100%;
       max-width: 100%;
-      table-layout: fixed;
+      table-layout: auto;
     }
 
     .report-table th,
@@ -1139,27 +1140,23 @@
       word-break: normal;
     }
 
-    .report-table th:first-child,
-    .report-table td:first-child {
-      width: 68%;
-    }
-
     .report-table th:last-child,
     .report-table td:last-child {
-      width: 32%;
       text-align: right;
-      white-space: normal;
+      white-space: nowrap;
     }
 
     @media (max-width: 560px) {
       .screen {
-        padding-left: 10px;
-        padding-right: 10px;
+        padding-left: 8px;
+        padding-right: 8px;
       }
 
       .report-screen-wrap {
+        width: 100%;
+        max-width: calc(100vw - 16px);
         border-radius: 12px;
-        padding: 12px;
+        padding: 10px;
       }
 
       .report-topbar {
@@ -1169,14 +1166,14 @@
       }
 
       .report-back-btn {
-        width: 38px;
-        height: 38px;
-        font-size: 22px;
+        width: 36px;
+        height: 36px;
+        font-size: 21px;
         flex: 0 0 auto;
       }
 
       .report-title {
-        font-size: 22px;
+        font-size: 21px;
         line-height: 1.1;
       }
 
@@ -1193,21 +1190,56 @@
         margin-bottom: 8px;
       }
 
-      .report-table th,
+      .report-table,
+      .report-table thead,
+      .report-table tbody {
+        display: block;
+        width: 100%;
+      }
+
+      .report-table thead {
+        display: none;
+      }
+
+      .report-table {
+        border: none;
+        background: transparent;
+      }
+
+      .report-table tr {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 6px;
+        align-items: center;
+        width: 100%;
+        padding: 8px 9px;
+        margin-bottom: 7px;
+        border: 1px solid #dddddd;
+        border-radius: 10px;
+        background: #ffffff;
+      }
+
       .report-table td {
-        padding: 7px 6px;
-        font-size: 12px;
-        line-height: 1.15;
+        display: block;
+        border-bottom: none;
+        padding: 0;
+        font-size: 13px;
+        line-height: 1.2;
+        color: #000000 !important;
       }
 
-      .report-table th:first-child,
       .report-table td:first-child {
-        width: 66%;
+        font-weight: 900;
+        text-align: left;
+        min-width: 0;
+        overflow-wrap: anywhere;
       }
 
-      .report-table th:last-child,
       .report-table td:last-child {
-        width: 34%;
+        font-weight: 1000;
+        text-align: right;
+        white-space: nowrap;
+        padding-left: 8px;
       }
     }
 
@@ -1460,7 +1492,7 @@
         ],
         recipe: {
           ingredients: ['2 oz gin', '1/2 oz maraschino liqueur', '1/4 oz crème de violette', '3/4 oz fresh lemon juice'],
-          method: ['Shake all ingredients with ice until well chilled.', 'Strain into a Nick and Nora.'],
+          method: ['Mix in a chilled mixing glass with ice until well chilled.', 'Strain into a Nick and Nora.'],
           garnish: ['Brandied cherry']
         }
       },
@@ -1499,7 +1531,7 @@
         ],
         recipe: {
           ingredients: ['1 1/2 oz vodka', '1/2 oz Passoa', '1 1/2 oz orange juice', '1 1/2 oz cranberry juice'],
-          method: ['Build all ingredients in a highball glass over ice.', 'Stir gently to combine.'],
+          method: ['Shake all ingredients with ice.', 'Strain into a highball glass over fresh ice.'],
           garnish: ['Orange slice']
         }
       },
@@ -1528,17 +1560,17 @@
         abbr: 'EN',
         color: 'linear-gradient(135deg,#26a69a,#00695c)',
         glass: ['Lowball glass'],
-        userIngredients: ['Gin', 'Campari', 'Fresh lemon juice', 'Maple syrup', 'Muddled grapes'],
+        userIngredients: ['Vermouth', 'Campari', 'Fresh lemon juice', 'Maple syrup', 'Muddled grapes'],
         usage: [
-          { name: 'Gin', oz: 1 },
+          { name: 'Vermouth', oz: 1 },
           { name: 'Campari', oz: 1 },
           { name: 'Fresh lemon juice', oz: 0.75 },
           { name: 'Maple syrup', oz: 0.5 },
           { name: 'Muddled grapes', amount: 5, unit: 'grapes' }
         ],
         recipe: {
-          ingredients: ['1 oz gin', '1 oz Campari', '3/4 oz fresh lemon juice', '1/2 oz maple syrup', '5 muddled grapes'],
-          method: ['Muddle grapes in a shaker.', 'Add gin, Campari, lemon juice, maple syrup, and ice.', 'Shake and fine strain into a lowball glass over fresh ice.'],
+          ingredients: ['1 oz vermouth', '1 oz Campari', '3/4 oz fresh lemon juice', '1/2 oz maple syrup', '5 muddled grapes'],
+          method: ['Muddle grapes in a shaker.', 'Add vermouth, Campari, lemon juice, maple syrup, and ice.', 'Shake and fine strain into a lowball glass over fresh ice.'],
           garnish: ['Orange slice', 'Green grape']
         }
       },
@@ -1576,7 +1608,7 @@
         ],
         recipe: {
           ingredients: ['1 1/2 oz vodka', '4 oz ginger beer', '1/3 oz fresh lemon juice'],
-          method: ['Build vodka and ginger beer in a copper mug over ice.', 'Add fresh lemon juice.', 'Gently stir to combine.'],
+          method: ['Shake vodka and fresh lemon juice with ice.', 'Strain into a copper mug over fresh ice.', 'Top with ginger beer and stir gently.'],
           garnish: ['Mint sprigs']
         }
       },
@@ -1616,7 +1648,7 @@
         ],
         recipe: {
           ingredients: ['1 1/2 oz arack', '1 1/2 oz apple juice', '3/4 oz Passoa', '1/2 oz passion fruit syrup', '3 oz soda water'],
-          method: ['Build arack, apple juice, Passoa, and passion fruit syrup in an ASSAF glass over ice.', 'Top with soda water.', 'Stir gently.'],
+          method: ['Shake arack, apple juice, Passoa, and passion fruit syrup with ice.', 'Strain into an ASSAF glass over fresh ice.', 'Top with soda water and stir gently.'],
           garnish: ['Mint sprig']
         }
       }
@@ -2472,6 +2504,7 @@
         'crème de violette',
         'creme de violette',
         'gin',
+        'vermouth',
         'maraschino liqueur',
         'mezcal',
         'passoa',
@@ -2515,13 +2548,42 @@
       };
     }
 
+    function normalizeSimpleReportData(data) {
+      const out = data && typeof data === 'object' ? data : {};
+      return {
+        activatedAt: out.activatedAt || null,
+        counts: (out.counts && typeof out.counts === 'object') ? out.counts : {},
+        ingredients: (out.ingredients && typeof out.ingredients === 'object') ? out.ingredients : {}
+      };
+    }
+
+    function getSimpleReportTotalFromCounts(counts) {
+      return Object.keys(counts || {}).reduce((sum, id) => {
+        return sum + Number(counts[id] || 0);
+      }, 0);
+    }
+
+    function getLocalSimpleReportData() {
+      return normalizeSimpleReportData({
+        activatedAt: simpleReportActivatedAt,
+        counts: simpleReportCounts || {},
+        ingredients: simpleReportIngredients || {}
+      });
+    }
+
+    function setSimpleReportData(data, shouldSave = false) {
+      const normalized = normalizeSimpleReportData(data);
+      simpleReportCounts = normalized.counts;
+      simpleReportIngredients = normalized.ingredients;
+      simpleReportActivatedAt = normalized.activatedAt;
+      if (shouldSave) saveSimpleReport();
+    }
+
     function loadSimpleReport() {
       try {
         const raw = localStorage.getItem(SIMPLE_REPORT_STORAGE);
         const data = normalizeSimpleReportData(raw ? JSON.parse(raw) : {});
-        simpleReportCounts = data.counts;
-        simpleReportIngredients = data.ingredients;
-        simpleReportActivatedAt = data.activatedAt;
+        setSimpleReportData(data, false);
       } catch (e) {
         simpleReportCounts = {};
         simpleReportIngredients = {};
@@ -2550,9 +2612,66 @@
     }
 
     function getSimpleReportTotal() {
-      return Object.keys(simpleReportCounts || {}).reduce((sum, id) => {
-        return sum + Number(simpleReportCounts[id] || 0);
-      }, 0);
+      return getSimpleReportTotalFromCounts(simpleReportCounts);
+    }
+
+    function normalizeRemoteSimpleReportData(remote) {
+      remote = remote && typeof remote === 'object' ? remote : {};
+      const counts = {};
+      const ingredients = {};
+      const activatedAt = remote.activatedAt || null;
+
+      // New and old remote count shape.
+      Object.keys(remote.simpleCounts || {}).forEach(id => {
+        counts[id] = Number(remote.simpleCounts[id] || 0);
+      });
+      Object.keys(remote.counts || {}).forEach(id => {
+        counts[id] = Math.max(Number(counts[id] || 0), Number(remote.counts[id] || 0));
+      });
+
+      // New remote ingredient shape: amount + metadata.
+      const amounts = remote.simpleIngredientAmounts || {};
+      const meta = remote.simpleIngredientMeta || {};
+      Object.keys(amounts).forEach(key => {
+        const m = meta[key] || {};
+        ingredients[key] = {
+          name: m.name || key,
+          unit: m.unit || 'oz',
+          category: m.category || 'other',
+          amount: Number(amounts[key] || 0)
+        };
+      });
+
+      // Old remote ingredient shape from previous versions.
+      Object.keys(remote.simpleIngredients || {}).forEach(key => {
+        const item = remote.simpleIngredients[key] || {};
+        const amount = Number(item.amount || 0);
+        if (!ingredients[key] || amount > Number(ingredients[key].amount || 0)) {
+          ingredients[key] = {
+            name: item.name || key,
+            unit: item.unit || 'oz',
+            category: item.category || 'other',
+            amount: amount
+          };
+        }
+      });
+
+      return { activatedAt, counts, ingredients };
+    }
+
+    function chooseBestReportData(localData, remoteData) {
+      const localTotal = getSimpleReportTotalFromCounts((localData || {}).counts);
+      const remoteTotal = getSimpleReportTotalFromCounts((remoteData || {}).counts);
+
+      // The report can now be opened from another device: use Firebase when it has
+      // at least as many READY events as local storage. Use local if it is ahead.
+      return remoteTotal >= localTotal ? normalizeSimpleReportData(remoteData) : normalizeSimpleReportData(localData);
+    }
+
+    function loadRemoteSimpleReport() {
+      return db.ref(appPath('report')).once('value').then(snap => {
+        return normalizeRemoteSimpleReportData(snap.val() || {});
+      });
     }
 
     function addToSimpleReport(order) {
@@ -2564,10 +2683,9 @@
 
       if (!simpleReportActivatedAt) simpleReportActivatedAt = Date.now();
 
-      // Direct cocktail increment.
+      // Immediate local increment.
       simpleReportCounts[drink.id] = Number(simpleReportCounts[drink.id] || 0) + 1;
 
-      // Direct ingredient increments from the served cocktail recipe usage.
       (drink.usage || []).forEach(item => {
         const key = safeKey(item.name);
         const amount = getUsageAmount(item);
@@ -2585,23 +2703,51 @@
         simpleReportIngredients[key].amount = Math.round((Number(simpleReportIngredients[key].amount || 0) + amount) * 1000) / 1000;
         simpleReportIngredients[key].unit = unit;
         simpleReportIngredients[key].name = item.name;
+        simpleReportIngredients[key].category = isAlcoholicIngredient(item.name) ? 'alcohol' : 'other';
       });
 
       saveSimpleReport();
       updateServedCountStatus();
 
-      // Firebase backup only. The visible report does not depend on Firebase.
+      // Firebase is now a real synced report counter, using transactions so that
+      // READY presses from different devices do not overwrite each other.
       try {
+        const base = appPath('report');
         const updates = {};
-        updates['simpleCounts/' + drink.id] = simpleReportCounts[drink.id];
+        updates['activatedAt'] = simpleReportActivatedAt;
         updates['simpleNames/' + drink.id] = drink.name;
-        updates['simpleIngredients'] = simpleReportIngredients;
         updates['lastReadyAt'] = firebase.database.ServerValue.TIMESTAMP;
-        db.ref(appPath('report')).update(updates).catch(err => {
-          console.warn('Online report backup failed. Local count is still OK:', err);
+
+        (drink.usage || []).forEach(item => {
+          const key = safeKey(item.name);
+          updates['simpleIngredientMeta/' + key] = {
+            name: item.name,
+            unit: getUsageUnit(item),
+            category: isAlcoholicIngredient(item.name) ? 'alcohol' : 'other'
+          };
+        });
+
+        db.ref(base).update(updates).catch(err => {
+          console.warn('Online report metadata backup failed. Local count is still OK:', err);
+        });
+
+        db.ref(appPath('report/simpleCounts/' + drink.id)).transaction(current => {
+          return Number(current || 0) + 1;
+        }).catch(err => {
+          console.warn('Online cocktail counter failed. Local count is still OK:', err);
+        });
+
+        (drink.usage || []).forEach(item => {
+          const key = safeKey(item.name);
+          const amount = getUsageAmount(item);
+          db.ref(appPath('report/simpleIngredientAmounts/' + key)).transaction(current => {
+            return Math.round((Number(current || 0) + amount) * 1000) / 1000;
+          }).catch(err => {
+            console.warn('Online ingredient counter failed. Local count is still OK:', err);
+          });
         });
       } catch (e) {
-        console.warn('Online report backup skipped. Local count is still OK:', e);
+        console.warn('Online report sync skipped. Local count is still OK:', e);
       }
 
       return true;
@@ -2616,19 +2762,21 @@
       return formatOz(num) + (unit ? ' ' + unit : '');
     }
 
-    function buildSimpleReportRows() {
-      loadSimpleReport();
+    function buildSimpleReportRows(data) {
+      const report = normalizeSimpleReportData(data || getLocalSimpleReportData());
+      const counts = report.counts || {};
+      const ingredients = report.ingredients || {};
 
       // Always show all 11 cocktails, alphabetically, including hidden Kentucky Mule.
       const cocktailRows = getReportDrinks().map(drink => [
         drink.name,
-        String(Number(simpleReportCounts[drink.id] || 0))
+        String(Number(counts[drink.id] || 0))
       ]);
 
       // Always show all ingredients in fixed order:
       // alcoholic ingredients alphabetically first, then non-alcoholic/other alphabetically.
       const ingredientRows = getIngredientCatalog().map(info => {
-        const saved = simpleReportIngredients[info.key] || {};
+        const saved = ingredients[info.key] || {};
         const amount = Number(saved.amount || 0);
         return [
           info.name,
@@ -2639,7 +2787,7 @@
       return {
         cocktailRows,
         ingredientRows,
-        servedCount: getSimpleReportTotal()
+        servedCount: getSimpleReportTotalFromCounts(counts)
       };
     }
 
@@ -2710,9 +2858,12 @@
       return buildSimpleReportRows();
     }
 
-    function paintReportFromData() {
-      const rows = buildSimpleReportRows();
-      const activatedAt = simpleReportActivatedAt;
+    function paintReportFromData(data) {
+      const report = normalizeSimpleReportData(data || getLocalSimpleReportData());
+      setSimpleReportData(report, false);
+
+      const rows = buildSimpleReportRows(report);
+      const activatedAt = report.activatedAt;
 
       els.reportMeta.textContent = activatedAt
         ? 'Counting started: ' + new Date(activatedAt).toLocaleString() + ' · Served: ' + rows.servedCount
@@ -2729,8 +2880,21 @@
 
     function renderReportScreen() {
       loadSimpleReport();
-      paintReportFromData();
+      const localData = getLocalSimpleReportData();
+
+      // Show local data immediately.
+      paintReportFromData(localData);
       showScreen('screen-report');
+
+      // Then sync from Firebase. This fixes report visibility across phone/computer
+      // and prevents local-only storage from hiding valid READY counts.
+      loadRemoteSimpleReport().then(remoteData => {
+        const bestData = chooseBestReportData(localData, remoteData);
+        setSimpleReportData(bestData, true);
+        paintReportFromData(bestData);
+      }).catch(err => {
+        console.warn('Remote report load failed. Showing local report:', err);
+      });
     }
 
     function markReady(orderOrClientId) {
