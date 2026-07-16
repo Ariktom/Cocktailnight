@@ -684,6 +684,14 @@
       min-width: 170px;
     }
 
+    .export-btn {
+      background: linear-gradient(135deg, #8e24aa, #4a148c);
+      color: #ffffff;
+      padding: 14px 18px;
+      font-size: 18px;
+      min-width: 170px;
+    }
+
     .report-screen-wrap {
       min-height: calc(100vh - 36px);
       background: #ffffff;
@@ -890,6 +898,12 @@
       margin-top: 16px;
       padding-top: 14px;
       border-top: 1px solid rgba(255,255,255,0.12);
+    }
+
+    .recipe-shortcuts-permanent {
+      margin-top: 0;
+      padding-top: 14px;
+      border-top: 1px solid rgba(255,255,255,0.09);
     }
 
     .recipe-shortcuts-title {
@@ -1100,6 +1114,67 @@
     .dup-marker.dup-order-7 { background: #76e3d5; }
     .dup-marker.dup-order-8 { background: #eadb8e; }
 
+
+
+    /* v33: controls, permanent recipes, guest visibility and CSV export */
+    .recipe-shortcuts-permanent {
+      margin-bottom: 16px;
+      padding: 14px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.09);
+      box-shadow: var(--shadow);
+    }
+
+    .recipe-shortcuts-permanent .recipe-shortcuts-wrap,
+    .recipe-shortcuts-permanent .recipe-shortcuts-title {
+      margin-top: 0;
+      padding-top: 0;
+    }
+
+    .recipe-shortcuts-permanent .recipe-shortcuts-title {
+      color: #ffffff;
+      font-size: 18px;
+      margin-bottom: 12px;
+    }
+
+    .order-btn:disabled,
+    .alt-order-btn:disabled {
+      opacity: 0.62;
+      cursor: not-allowed;
+      transform: none !important;
+      filter: grayscale(0.25);
+    }
+
+    .orders-table .guest-name-cell {
+      font-weight: 1000;
+      font-size: 16px;
+      color: #ffffff;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+
+    .orders-table .guest-name-cell.guest-cancel-press {
+      color: #ffe05f;
+      text-shadow: 0 0 8px rgba(255,224,95,0.95);
+    }
+
+    @media (max-width: 560px) {
+      .recipe-shortcuts-permanent {
+        padding: 10px;
+        margin-bottom: 12px;
+      }
+
+      .recipe-shortcuts-permanent .recipe-shortcuts-title {
+        font-size: 16px;
+        margin-bottom: 8px;
+      }
+
+      .orders-table .guest-name-cell {
+        font-size: 13px !important;
+      }
+    }
 
     /* v26: report table text contrast fix */
     .report-table,
@@ -1316,10 +1391,10 @@
       <button class="btn btn-logout" id="btn-bartender-logout">Logout</button>
     </div>
 
-    <div id="bartender-controls" class="collapse-card card open">
+    <div id="bartender-controls" class="collapse-card card">
       <button id="collapse-toggle" class="collapse-head" type="button">
         <span>Controls</span>
-        <span id="collapse-arrow">▾</span>
+        <span id="collapse-arrow">▸</span>
       </button>
       <div class="collapse-body">
         <div class="control-row">
@@ -1327,16 +1402,18 @@
           <button id="btn-reset-all" class="btn reset-all-btn">RESET ALL</button>
           <button id="btn-activate" class="btn activate-btn">ACTIVATE</button>
           <button id="btn-report" class="btn report-btn">REPORT</button>
+          <button id="btn-export" class="btn export-btn">EXPORT CSV</button>
           <div id="bar-open-status" class="mini-status" style="display:none"></div>
           <div id="counting-status" class="mini-status">Counting: OFF</div>
           <div id="served-count-status" class="mini-status served-status">Served Recorded: 0</div>
         </div>
 
-        <div class="recipe-shortcuts-wrap">
-          <div class="recipe-shortcuts-title">Recipes</div>
-          <div id="recipe-shortcuts" class="recipe-shortcuts"></div>
-        </div>
       </div>
+    </div>
+
+    <div class="recipe-shortcuts-wrap recipe-shortcuts-permanent card">
+      <div class="recipe-shortcuts-title">Recipes</div>
+      <div id="recipe-shortcuts" class="recipe-shortcuts"></div>
     </div>
 
     <div class="table-wrap">
@@ -1550,7 +1627,7 @@
         ],
         recipe: {
           ingredients: ['2 oz bourbon', '3/4 oz fresh lemon juice', '1/2 oz maple syrup', '1/2 oz red wine float'],
-          method: ['Shake bourbon, lemon juice, and maple syrup with ice.', 'Strain into a whiskey glass over fresh ice.', 'Float red wine slowly over the top.'],
+          method: ['Shake bourbon, lemon juice, and maple syrup with ice.', 'Strain into whiskey glass over large ice rock.', 'Float red wine slowly over the top.'],
           garnish: ['No garnish']
         }
       },
@@ -1571,7 +1648,7 @@
         recipe: {
           ingredients: ['1 oz vermouth', '1 oz Campari', '3/4 oz fresh lemon juice', '1/2 oz maple syrup', '5 muddled grapes'],
           method: ['Muddle grapes in a shaker.', 'Add vermouth, Campari, lemon juice, maple syrup, and ice.', 'Shake and fine strain into a lowball glass over fresh ice.'],
-          garnish: ['Orange slice', 'Green grape']
+          garnish: ['Orange slice and two grapes on a skewer']
         }
       },
       {
@@ -1750,6 +1827,7 @@
       reportMeta: document.getElementById('report-meta'),
       reportCocktails: document.getElementById('report-cocktails'),
       reportIngredients: document.getElementById('report-ingredients'),
+      btnExport: document.getElementById('btn-export'),
       ordersTbody: document.getElementById('orders-tbody'),
       ordersEmpty: document.getElementById('orders-empty'),
       collapseCard: document.getElementById('bartender-controls'),
@@ -2000,6 +2078,7 @@
       els.btnActivate.classList.toggle('active', reportActive);
       els.btnActivate.textContent = reportActive ? 'COUNTING ACTIVE' : 'ACTIVATE';
       renderDrinkGrid();
+      if (sessionRole === 'user') updateUserOrderButton();
     }
 
     function formatElapsed(ms) {
@@ -2281,7 +2360,11 @@
       btn.innerHTML = '';
       btn.className = 'order-btn';
       btn.disabled = false;
-      if (els.btnKentucky) els.btnKentucky.disabled = false;
+      btn.title = '';
+      if (els.btnKentucky) {
+        els.btnKentucky.disabled = false;
+        els.btnKentucky.title = '';
+      }
       els.cancelOrderBtn.style.display = 'flex';
       els.cancelOrderBtn.disabled = true;
 
@@ -2290,7 +2373,9 @@
 
       if (!drink) {
         label.textContent = 'ORDER';
-        btn.classList.add('green');
+        btn.classList.add(reportActive ? 'green' : 'locked');
+        btn.disabled = !reportActive;
+        if (els.btnKentucky) els.btnKentucky.disabled = !reportActive;
         return;
       }
 
@@ -2326,8 +2411,20 @@
       }
 
       label.textContent = 'ORDER';
+      if (!reportActive) {
+        btn.classList.add('locked');
+        btn.disabled = true;
+        btn.title = 'Waiting for bartender activation';
+        if (els.btnKentucky) {
+          els.btnKentucky.disabled = true;
+          els.btnKentucky.title = 'Waiting for bartender activation';
+        }
+        return;
+      }
+
       btn.classList.add('green');
       btn.disabled = false;
+      if (els.btnKentucky) els.btnKentucky.disabled = false;
     }
 
     function orderMatchesCurrentDrink() {
@@ -2399,6 +2496,11 @@
         return;
       }
       if (myActiveOrder) return;
+      if (!reportActive) {
+        updateUserOrderButton();
+        alert('Orders are not active yet. Please wait for the bartender to press ACTIVATE.');
+        return;
+      }
 
       const chosenDrinkId = drinkIdOverride || els.userOrderBtn.dataset.drinkId || currentUserDrinkId || selectedDrinkId;
       const drink = getDrinkById(chosenDrinkId);
@@ -2878,6 +2980,68 @@
       updateServedCountStatus();
     }
 
+
+    function csvCell(value) {
+      const text = String(value == null ? '' : value);
+      return '"' + text.replace(/"/g, '""') + '"';
+    }
+
+    function downloadCsv(filename, rows) {
+      const csv = '\ufeff' + rows.map(row => row.map(csvCell).join(',')).join('\r\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    function buildReportCsvRows(reportDataForExport) {
+      const report = normalizeSimpleReportData(reportDataForExport || getLocalSimpleReportData());
+      const rows = buildSimpleReportRows(report);
+      const exportedAt = new Date();
+      const safeDate = exportedAt.toISOString().slice(0, 19).replace('T', ' ');
+
+      const csvRows = [
+        ['VIP Cocktail Night Report'],
+        ['Exported', safeDate],
+        ['Counting started', report.activatedAt ? new Date(report.activatedAt).toLocaleString() : ''],
+        ['Served total', rows.servedCount],
+        [],
+        ['Cocktails Served'],
+        ['Cocktail', 'Served']
+      ];
+
+      rows.cocktailRows.forEach(row => csvRows.push(row));
+      csvRows.push([]);
+      csvRows.push(['Ingredients Consumed']);
+      csvRows.push(['Ingredient', 'Consumed']);
+      rows.ingredientRows.forEach(row => csvRows.push(row));
+
+      return csvRows;
+    }
+
+    function exportReportCsv() {
+      loadSimpleReport();
+      const localData = getLocalSimpleReportData();
+
+      const doExport = data => {
+        const now = new Date();
+        const stamp = now.toISOString().slice(0, 10) + '_' + now.toTimeString().slice(0, 8).replace(/:/g, '-');
+        downloadCsv('vip_cocktail_night_report_' + stamp + '.csv', buildReportCsvRows(data));
+      };
+
+      loadRemoteSimpleReport().then(remoteData => {
+        doExport(chooseBestReportData(localData, remoteData));
+      }).catch(err => {
+        console.warn('Remote report export failed. Exporting local report:', err);
+        doExport(localData);
+      });
+    }
+
     function renderReportScreen() {
       loadSimpleReport();
       const localData = getLocalSimpleReportData();
@@ -2912,6 +3076,51 @@
       db.ref(appPath('orders/' + clientId)).remove().catch(err => {
         console.warn('Order was cleared locally, but online READY remove failed:', err);
       });
+    }
+
+
+    function cancelOrderByBartender(order) {
+      const normalized = normalizeOrder(order, order && order.clientId);
+      if (!normalized || !normalized.clientId) return;
+      const clientId = normalized.clientId;
+
+      delete firebaseOrdersMap[clientId];
+      removeLocalOrder(clientId);
+
+      db.ref(appPath('orders/' + clientId)).remove().catch(err => {
+        putLocalOrder(normalized);
+        alert('Order was not cancelled online. Firebase error: ' + (err && err.message ? err.message : err));
+      });
+    }
+
+    function setupBartenderCancelLongPress(el, order) {
+      if (!el || !order) return;
+      let timer = null;
+
+      const clear = () => {
+        if (timer) clearTimeout(timer);
+        timer = null;
+        el.classList.remove('guest-cancel-press');
+      };
+
+      const start = (e) => {
+        if (e && e.cancelable) e.preventDefault();
+        clear();
+        el.classList.add('guest-cancel-press');
+        timer = setTimeout(() => {
+          timer = null;
+          el.classList.remove('guest-cancel-press');
+          cancelOrderByBartender(order);
+        }, 2000);
+      };
+
+      el.addEventListener('pointerdown', start);
+      el.addEventListener('mousedown', start);
+      el.addEventListener('touchstart', start, { passive: false });
+      ['pointerup', 'pointercancel', 'pointerleave', 'mouseup', 'mouseleave', 'touchend', 'touchcancel'].forEach(evt => {
+        el.addEventListener(evt, clear);
+      });
+      el.addEventListener('contextmenu', e => e.preventDefault());
     }
 
     function startPreparing(clientId) {
@@ -2985,6 +3194,9 @@
 
         const tdUser = document.createElement('td');
         tdUser.textContent = order.userName || 'User';
+        tdUser.className = 'guest-name-cell';
+        tdUser.title = 'Long press 2 seconds to cancel this order';
+        setupBartenderCancelLongPress(tdUser, order);
 
         const tdDrink = document.createElement('td');
         const duplicateKey = order.drinkId || order.drinkName || '';
@@ -3066,7 +3278,15 @@
       showScreen('screen-user-home');
     }
 
+
+    function closeControlsPanel() {
+      if (!els.collapseCard || !els.collapseArrow) return;
+      els.collapseCard.classList.remove('open');
+      els.collapseArrow.textContent = '▸';
+    }
+
     function renderBartenderHome() {
+      closeControlsPanel();
       updateBarStatusBanner();
       refreshSortMarks();
       renderOrdersTable();
@@ -3128,6 +3348,7 @@
       db.ref(appPath('state/reportActive')).on('value', snap => {
         reportActive = !!snap.val();
         updateBarStatusBanner();
+        updateUserOrderButton();
       });
 
       db.ref(appPath('report')).on('value', snap => {
@@ -3274,6 +3495,7 @@
     document.getElementById('btn-reset-all').addEventListener('click', resetAllOrders);
     document.getElementById('btn-activate').addEventListener('click', activateCounting);
     document.getElementById('btn-report').addEventListener('click', renderReportScreen);
+    document.getElementById('btn-export').addEventListener('click', exportReportCsv);
     document.getElementById('btn-back-report').addEventListener('click', () => showScreen('screen-bartender'));
     document.getElementById('btn-kentucky').addEventListener('click', () => submitOrder('kentucky-mule'));
     if (els.recipeMultiplier) {
